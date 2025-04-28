@@ -6,6 +6,7 @@ pub mod ring;
 #[derive(Drop, Serde)]
 struct Args {
     attestations: Array<Attestation>,
+    n: u32,
 }
 
 #[derive(Drop, Serde)]
@@ -17,11 +18,11 @@ struct Attestation {
 
 #[executable]
 fn main(args: Args) {
-    let Args { attestations } = args;
+    let Args { attestations, n } = args;
     println!("Verifying {} signatures", attestations.len());
 
     for attestation in attestations {
-        falcon::verify_uncompressed::<512>(attestation.s1, attestation.pk, attestation.msg_point)
+        falcon::verify_uncompressed(attestation.s1, attestation.pk, attestation.msg_point, n)
             .expect('Invalid signature');
     }
     println!("OK");

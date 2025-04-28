@@ -1,7 +1,6 @@
 use core::num::traits::CheckedAdd;
 
 pub const Q: u16 = 12289;
-pub const QQ: i16 = 12289;
 pub const Q32: u32 = 12289;
 pub const Q64: u64 = 12289;
 

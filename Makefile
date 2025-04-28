@@ -13,6 +13,10 @@ falcon-execute:
 		&& cd packages/falcon \
 		&& scarb execute --arguments-file tests/data/args_512_1.json --print-resource-usage
 
+falcon-args:
+	python packages/falcon/scripts/generate_args.py --n 512 --num_signatures 1 > packages/falcon/tests/data/args_512_1.json
+	python packages/falcon/scripts/generate_args.py --n 1024 --num_signatures 1 > packages/falcon/tests/data/args_1024_1.json
+
 falcon-build:
 	scarb --profile release build
 

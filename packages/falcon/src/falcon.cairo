@@ -13,25 +13,23 @@ pub enum FalconVerificationError {
 
 /// Verify a Falcon signature
 ///
-/// # Generics
-/// * `N` - The degree of the polynomials
-///
 /// # Arguments
 /// * `s1` - Uncompressed signature
 /// * `pk` - The public key
 /// * `msg_point` - pre-computed SHAKE(message | salt)
+/// * `n` - the degree of the polynomials
 pub fn verify_uncompressed<const N: u32>(
-    s1: Span<u16>, pk: Span<u16>, msg_point: Span<u16>,
+    s1: Span<u16>, pk: Span<u16>, msg_point: Span<u16>, n: u32,
 ) -> Result<(), FalconVerificationError> {
-    assert(s1.len() == N, 'unexpected s1 length');
-    assert(pk.len() == N, 'unexpected pk length');
-    assert(msg_point.len() == N, 'unexpected msg length');
+    assert(s1.len() == n, 'unexpected s1 length');
+    assert(pk.len() == n, 'unexpected pk length');
+    assert(msg_point.len() == n, 'unexpected msg length');
 
     let s1_x_h = mul_zq(s1, pk);
     let s0 = sub_zq(msg_point, s1_x_h);
 
     let norm = extend_euclidean_norm(extend_euclidean_norm(0, s0)?, s1)?;
-    if norm > sig_bound(N) {
+    if norm > sig_bound(n) {
         return Result::Err(FalconVerificationError::NormOverflow);
     }
 
@@ -324,7 +322,7 @@ mod tests {
             8300, 3298, 9483, 5987, 12127, 7279, 8021, 12123, 12011, 8915, 676, 7129, 11601, 1593,
             10526, 9038, 3417, 10657, 4936, 5525,
         ];
-        if let Err(e) = verify_uncompressed::<1024>(s1.span(), pk.span(), msg_point.span()) {
+        if let Err(e) = verify_uncompressed(s1.span(), pk.span(), msg_point.span(), 1024) {
             println!("Error: {:?}", e);
             assert!(false);
         }

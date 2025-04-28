@@ -1,9 +1,10 @@
 from falcon import SecretKey, decompress, HEAD_LEN, SALT_LEN
 import json
+import argparse
 
 Q=12289
 
-def generate_args(n: int, num_signatures: int):
+def generate_attestations(n: int, num_signatures: int) -> list[dict]:
     sk = SecretKey(n)
     attestations = [generate_attestation(sk, f'message #{i}'.encode()) for i in range(num_signatures)]
     return attestations
@@ -22,7 +23,7 @@ def generate_attestation(sk: SecretKey, message: bytes):
     }
 
 
-def format_args(args: list[dict]):
+def format_args(args: list[dict], n: int):
     serialized = [len(args)]
     for arg in args:
         serialized.extend([
@@ -33,9 +34,15 @@ def format_args(args: list[dict]):
             len(arg['msg_point']),
             *arg['msg_point']
         ])
+    serialized.append(n)
     return json.dumps(list(map(hex, serialized)))
 
 
 if __name__ == '__main__':
-    args = generate_args(512, 1)
-    print(format_args(args))
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--n', type=int, default=512)
+    parser.add_argument('--num_signatures', type=int, default=1)
+    args = parser.parse_args()
+
+    attestations = generate_attestations(args.n, args.num_signatures)
+    print(format_args(attestations, args.n))
