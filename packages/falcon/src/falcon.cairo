@@ -1,37 +1,48 @@
 use core::num::traits::{CheckedAdd, CheckedMul};
 use crate::ntt::{mul_zq, sub_zq};
 
-pub const SIG_BOUND: u32 = 70265242;
+/// Half of the base ring modulus
+const HALF_Q: u16 = 6145;
+/// Base ring modulus
+const Q: u16 = 12289;
 
 #[derive(Drop, Debug)]
 pub enum FalconVerificationError {
-    InvalidSignature,
     NormOverflow,
 }
 
-fn verify_pk_hash(pk_hash: [u32; 8], pk: [i32; 1024]) -> Result<(), FalconVerificationError> {
-    Result::Ok(())
-}
-
-fn falcon1024_verify_uncompressed(
-    s1: [u16; 1024], pk: [u16; 1024], msg_point: [u16; 1024],
+/// Verify a Falcon signature
+///
+/// # Generics
+/// * `N` - The degree of the polynomials
+///
+/// # Arguments
+/// * `s1` - Uncompressed signature
+/// * `pk` - The public key
+/// * `msg_point` - pre-computed SHAKE(message | salt)
+pub fn verify_uncompressed<const N: u32>(
+    s1: Span<u16>, pk: Span<u16>, msg_point: Span<u16>,
 ) -> Result<(), FalconVerificationError> {
-    let s1_x_h = mul_zq(s1.span(), pk.span());
-    let s0 = sub_zq(msg_point.span(), s1_x_h);
+    assert_eq!(s1.len(), N);
+    assert_eq!(pk.len(), N);
+    assert_eq!(msg_point.len(), N);
 
-    let norm_sign = add_norm(add_norm(0, s0)?, s1.span())?;
-    if norm_sign > SIG_BOUND {
+    let s1_x_h = mul_zq(s1, pk);
+    let s0 = sub_zq(msg_point, s1_x_h);
+
+    let norm = extend_euclidean_norm(extend_euclidean_norm(0, s0)?, s1)?;
+    if norm > sig_bound(N) {
         return Result::Err(FalconVerificationError::NormOverflow);
     }
 
     Result::Ok(())
 }
 
-/// Compute the norm of a polynomial and add it to an accumulator
-pub fn add_norm(mut acc: u32, mut f: Span<u16>) -> Result<u32, FalconVerificationError> {
+/// Compute the Euclidean norm of a polynomial and add it to the accumulator
+fn extend_euclidean_norm(mut acc: u32, mut f: Span<u16>) -> Result<u32, FalconVerificationError> {
     let mut res = Ok(0);
     while let Some(f_coeff) = f.pop_front() {
-        match square_and_add(acc, *f_coeff) {
+        match norm_square_and_add(acc, *f_coeff) {
             Some(res) => acc = res,
             None => {
                 res = Result::Err(FalconVerificationError::NormOverflow);
@@ -45,12 +56,44 @@ pub fn add_norm(mut acc: u32, mut f: Span<u16>) -> Result<u32, FalconVerificatio
     }
 }
 
-/// Square a value and add it to an accumulator
-fn square_and_add(acc: u32, x: u16) -> Option<u32> {
-    let x: u32 = x.into();
+/// Normalize the value square to be in the range [0, Q^2/4] and add it to an accumulator
+fn norm_square_and_add(acc: u32, x: u16) -> Option<u32> {
+    let x: u32 = if x < HALF_Q {
+        x.into()
+    } else {
+        (Q - x).into()
+    };
     match x.checked_mul(x) {
         Some(x_sq) => acc.checked_add(x_sq),
         None => None,
+    }
+}
+
+/// Upper bound on ||s0||^2 + ||s1||^2
+fn sig_bound(degree: u32) -> u32 {
+    if degree == 1024 {
+        70265242
+    } else if degree == 512 {
+        34034726
+    } else if degree == 256 {
+        16468416
+    } else if degree == 128 {
+        7959734
+    } else if degree == 64 {
+        3842630
+    } else if degree == 32 {
+        1852696
+    } else if degree == 16 {
+        892039
+    } else if degree == 8 {
+        428865
+    } else if degree == 4 {
+        208714
+    } else if degree == 2 {
+        101498
+    } else {
+        panic!("Unsupported degree");
+        0
     }
 }
 
@@ -281,7 +324,7 @@ mod tests {
             8300, 3298, 9483, 5987, 12127, 7279, 8021, 12123, 12011, 8915, 676, 7129, 11601, 1593,
             10526, 9038, 3417, 10657, 4936, 5525,
         ];
-        if let Err(e) = falcon1024_verify_uncompressed(s1, pk, msg_point) {
+        if let Err(e) = verify_uncompressed::<1024>(s1.span(), pk.span(), msg_point.span()) {
             println!("Error: {:?}", e);
             assert!(false);
         }
