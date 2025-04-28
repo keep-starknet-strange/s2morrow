@@ -1,2 +1,5 @@
 [workspace]
 members = ["packages/*"]
+
+[cairo]
+enable-gas = false

@@ -23,9 +23,9 @@ pub enum FalconVerificationError {
 pub fn verify_uncompressed<const N: u32>(
     s1: Span<u16>, pk: Span<u16>, msg_point: Span<u16>,
 ) -> Result<(), FalconVerificationError> {
-    assert_eq!(s1.len(), N);
-    assert_eq!(pk.len(), N);
-    assert_eq!(msg_point.len(), N);
+    assert(s1.len() == N, 'unexpected s1 length');
+    assert(pk.len() == N, 'unexpected pk length');
+    assert(msg_point.len() == N, 'unexpected msg length');
 
     let s1_x_h = mul_zq(s1, pk);
     let s0 = sub_zq(msg_point, s1_x_h);

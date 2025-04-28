@@ -12,7 +12,7 @@ pub const SQR1_INV: u16 = 10810; // Inverse of SQR1 mod q
 
 /// Subtract coefficients of two polynomials modulo Q
 pub fn sub_zq(mut f: Span<u16>, mut g: Span<u16>) -> Span<u16> {
-    assert_eq!(f.len(), g.len());
+    assert(f.len() == g.len(), 'f.len() != g.len()');
     let mut res = array![];
 
     while let Some(f_coeff) = f.pop_front() {
@@ -25,7 +25,7 @@ pub fn sub_zq(mut f: Span<u16>, mut g: Span<u16>) -> Span<u16> {
 
 /// Multiply coefficients of two polynomials modulo Q
 pub fn mul_ntt(mut f: Span<u16>, mut g: Span<u16>) -> Span<u16> {
-    assert_eq!(f.len(), g.len());
+    assert(f.len() == g.len(), 'f.len() != g.len()');
     let mut res = array![];
 
     while let Some(f_coeff) = f.pop_front() {
@@ -65,7 +65,7 @@ pub fn split_ntt(mut f_ntt: Span<u16>) -> (Span<u16>, Span<u16>) {
 
 /// Merge two polynomials in NTT representation.
 pub fn merge_ntt(mut f0_ntt: Span<u16>, mut f1_ntt: Span<u16>) -> Span<u16> {
-    assert_eq!(f0_ntt.len(), f1_ntt.len());
+    assert(f0_ntt.len() == f1_ntt.len(), 'f0_ntt.len() != f1_ntt.len()');
     let n = 2 * f0_ntt.len();
     let mut roots = get_even_roots(n);
     let mut f_ntt = array![];

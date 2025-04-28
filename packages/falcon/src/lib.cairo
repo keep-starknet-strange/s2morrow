@@ -21,7 +21,7 @@ fn main(args: Args) {
     println!("Verifying {} signatures", attestations.len());
 
     for attestation in attestations {
-        falcon::verify_uncompressed::<1024>(attestation.s1, attestation.pk, attestation.msg_point)
+        falcon::verify_uncompressed::<512>(attestation.s1, attestation.pk, attestation.msg_point)
             .expect('Invalid signature');
     }
     println!("OK");
