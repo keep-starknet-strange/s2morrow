@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use core::blake::{blake2s_finalize, blake2s_compress};
+use core::blake::{blake2s_compress, blake2s_finalize};
 use core::box::BoxImpl;
 
 const BLAKE2S_256_IV: [u32; 8] = [

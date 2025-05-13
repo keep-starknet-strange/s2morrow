@@ -2,14 +2,13 @@
 //
 // SPDX-License-Identifier: MIT
 
-pub mod fors;
-pub mod wots;
 pub mod blake2s;
-pub mod word_array;
+pub mod fors;
+pub mod hasher;
 pub mod params_128s;
 pub mod sphincs;
-pub mod hasher;
+pub mod word_array;
+pub mod wots;
 
 #[executable]
-fn main() {
-}
+fn main() {}

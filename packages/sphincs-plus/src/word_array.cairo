@@ -28,11 +28,7 @@ pub struct WordSpan {
 pub impl WordSpanImpl of WordSpanTrait {
     /// Create a new [WordSpan] from components.
     fn new(input: Span<u32>, last_input_word: u32, last_input_num_bytes: u32) -> WordSpan {
-        WordSpan {
-            input,
-            last_input_word,
-            last_input_num_bytes,
-        }
+        WordSpan { input, last_input_word, last_input_num_bytes }
     }
 
     /// Split word array into components:
@@ -46,11 +42,7 @@ pub impl WordSpanImpl of WordSpanTrait {
 pub impl WordArrayImpl of WordArrayTrait {
     /// Create a new [WordArray] from components.
     fn new(input: Array<u32>, last_input_word: u32, last_input_num_bytes: u32) -> WordArray {
-        WordArray {
-            input,
-            last_input_word,
-            last_input_num_bytes,
-        }
+        WordArray { input, last_input_word, last_input_num_bytes }
     }
 
     /// Create a [WordSpan] out of the array snapshot.
