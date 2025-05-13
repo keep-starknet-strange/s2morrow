@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 StarkWare Industries Ltd.
+//
+// SPDX-License-Identifier: MIT
+
 use core::num::traits::{CheckedAdd, CheckedMul};
 use crate::ntt::{mul_zq, sub_zq};
 
