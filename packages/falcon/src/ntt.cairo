@@ -1,8 +1,12 @@
+// SPDX-FileCopyrightText: 2025 StarkWare Industries Ltd.
+//
+// SPDX-License-Identifier: MIT
+
 //! Implementation of Number Theoretic Transform (NTT) for polynomials in Z_q[x]/(phi)
 //! Ported from https://github.com/tprest/falcon.py/blob/master/ntt.py
 
 use crate::ntt_constants::{get_even_roots, get_even_roots_inv};
-use crate::ring::{add_mod, mul3_mod, mul_mod, sub_mod};
+use crate::zq::{add_mod, mul3_mod, mul_mod, sub_mod};
 
 pub const I2: u16 = 6145; // Inverse of 2 mod q
 pub const I2_INV: u16 = 6145; // Inverse of 2 mod q

@@ -1,7 +1,11 @@
+// SPDX-FileCopyrightText: 2025 StarkWare Industries Ltd.
+//
+// SPDX-License-Identifier: MIT
+
 pub mod falcon;
 pub mod ntt;
 pub mod ntt_constants;
-pub mod ring;
+pub mod zq;
 
 #[derive(Drop, Serde)]
 struct Args {

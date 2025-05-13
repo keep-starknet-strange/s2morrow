@@ -1,3 +1,9 @@
+// SPDX-FileCopyrightText: 2025 StarkWare Industries Ltd.
+//
+// SPDX-License-Identifier: MIT
+
+//! Operations on the base ring Z_q
+
 use core::num::traits::CheckedAdd;
 
 pub const Q: u16 = 12289;

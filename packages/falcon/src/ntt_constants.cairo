@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 StarkWare Industries Ltd.
+//
+// SPDX-License-Identifier: MIT
+
 //! Constants (Zq-roots of cyclotomic polynomials and their inverses) for the NTT.
 
 /// Even roots of phi_4 = x^2 + 1.
