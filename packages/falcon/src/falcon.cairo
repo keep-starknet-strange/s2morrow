@@ -94,7 +94,7 @@ fn sig_bound(degree: u32) -> u32 {
     } else if degree == 2 {
         101498
     } else {
-        panic!("Unsupported degree");
+        assert(false, 'Unsupported degree');
         0
     }
 }

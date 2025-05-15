@@ -5,8 +5,11 @@ install-stwo:
 	RUSTFLAGS="-C target-cpu=native -C opt-level=3" \
 		cargo install \
 		--git https://github.com/starkware-libs/stwo-cairo \
-		--rev bde0d3a552c7280e27b3a249d85ee37ac55f642e \
+		--rev 61d338ee93f11a735eb5cd86f024f7a73d59d420 \
 		adapted_stwo
+
+install-cairo-execute:
+	cargo install --git https://github.com/ohad-agadi/cairo.git --rev 24c4130 cairo-execute
 
 falcon-execute:
 	rm -rf $(TARGET_DIR)/execute/falcon \
