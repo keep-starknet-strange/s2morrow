@@ -127,7 +127,7 @@ pub fn ntt(mut f: Span<u16>) -> Span<u16> {
         let odd = sub_mod(*f[0], f1_j);
         array![even, odd].span()
     } else {
-        panic!("This should not happen if n is a power of 2");
+        assert(false, 'n is not a power of 2');
         array![].span()
     }
 }
@@ -145,7 +145,7 @@ pub fn intt(mut f_ntt: Span<u16>) -> Span<u16> {
         let odd = mul3_mod(I2, sub_mod(*f_ntt[0], *f_ntt[1]), SQR1_INV);
         array![even, odd].span()
     } else {
-        panic!("This should not happen if n is a power of 2");
+        assert(false, 'n is not a power of 2');
         array![].span()
     }
 }

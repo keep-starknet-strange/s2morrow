@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: MIT
 
-use crate::blake2s::blake2s_32;
 use crate::fors::{ForsSignature, fors_pk_from_sig};
 use crate::params_128s::{HashOutput, SPX_DGST_BYTES};
 use crate::word_array::{WordArray, WordArrayTrait, WordSpan, WordSpanTrait};
+use crate::hasher::hash_message_128s;
 
 #[derive(Drop)]
 pub struct SphincsSignature {
@@ -23,7 +23,7 @@ pub struct XMessageDigest {
 }
 
 /// Verify a signature for Sphincs+ instantiated with Blake2s with 128s parameters.
-pub fn verify_blake_128s(message: WordArray, sig: SphincsSignature) {
+pub fn verify_blake_128s(message: WordSpan, sig: SphincsSignature) {
     let SphincsSignature { randomizer, pk_seed, pk_root, fors_sig } = sig;
 
     // Compute the extended message digest which is concatenation of `mhash || tree_idx ||
@@ -34,51 +34,7 @@ pub fn verify_blake_128s(message: WordArray, sig: SphincsSignature) {
     let XMessageDigest { mhash, tree_address, leaf_idx } = split_xdigest_128s(digest.span());
 
     // Compute FORS public key (root) from the signature.
-    let fors_pk = fors_pk_from_sig(fors_sig, mhash);
-}
-
-/// Hash a message using Blake2s hash function.
-/// Returns the extended message digest of size SPX_DGST_BYTES as a [WordArray].
-/// NOTE: this is not a generic implementation, rather a shortcut for 128s.
-fn hash_message_128s(
-    randomizer: HashOutput,
-    pk_seed: HashOutput,
-    pk_root: HashOutput,
-    message: WordArray,
-    output_len: u32,
-) -> WordArray {
-    let mut data: Array<u32> = array![];
-    data.append_span(randomizer.span());
-    data.append_span(pk_seed.span());
-    data.append_span(pk_root.span());
-
-    let (msg_words, msg_last_word, _) = message.into_components();
-    data.append_span(msg_words.span());
-    data
-        .append(
-            msg_last_word,
-        ); // message is expected to be zero padded if not a multiple of 4 bytes
-
-    // Compute the seed for XOF.
-    let seed = blake2s_32(data.span());
-
-    let mut xof_data: Array<u32> = array![];
-    xof_data.append_span(randomizer.span());
-    xof_data.append_span(pk_seed.span());
-    xof_data.append_span(seed.span());
-    xof_data.append(0); // MGF1 counter = 0
-
-    // Apply MGF1 to the seed.
-    let mut buffer = blake2s_32(xof_data.span()).unbox().span();
-
-    // Construct the digest from the extended output.
-    // NOTE: we haven't cleared the LSB of the last word, has to be handled correctly.
-    let last_word = *buffer.pop_back().unwrap();
-
-    // Construct the digest from the first 7 words (28 bits) and add 2 bytes from the last word.
-    let res = WordArrayTrait::new(buffer.into(), last_word, 2);
-    assert(res.byte_len() == output_len, 'Invalid extended digest length');
-    res
+    let fors_pk = fors_pk_from_sig(fors_sig, mhash, Default::default());
 }
 
 /// Split the extended message digest into the message hash, tree address and leaf index.

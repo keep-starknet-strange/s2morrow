@@ -10,6 +10,8 @@ pub const SPX_FULL_HEIGHT: usize = 63;
 pub const SPX_D: usize = 7;
 /// FORS tree height.
 pub const SPX_FORS_HEIGHT: usize = 12;
+/// FORS tree base offset = 1 << SPX_FORS_HEIGHT.
+pub const SPX_FORS_BASE_OFFSET: usize = 4096;
 /// Number of FORS trees.
 pub const SPX_FORS_TREES: usize = 14;
 
