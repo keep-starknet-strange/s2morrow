@@ -134,7 +134,7 @@ pub mod hex {
     /// Gets words from hex (base16).
     pub fn words_from_hex(hex_string: ByteArray) -> WordArray {
         let num_characters = hex_string.len();
-        assert!(num_characters & 1 == 0, "Invalid hex string length");
+        assert(num_characters % 2 == 0, 'Invalid hex string length');
 
         let mut words: WordArray = Default::default();
         let mut i = 0;
