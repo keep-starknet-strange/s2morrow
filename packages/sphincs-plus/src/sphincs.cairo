@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
+use crate::address::{Address, AddressTrait, AddressType};
 use crate::fors::{ForsSignature, fors_pk_from_sig};
 use crate::hasher::{hash_message_128s, initialize_hash_function};
 use crate::params_128s::{HashOutput, SPX_DGST_BYTES};
@@ -22,15 +23,23 @@ pub struct XMessageDigest {
     pub leaf_idx: u16,
 }
 
-/// Verify a signature for Sphincs+ instantiated with Blake2s with 128s parameters.
-pub fn verify_blake_128s(message: WordSpan, sig: SphincsSignature) {
+/// Verify a signature for Sphincs+ instantiated with 128s parameters.
+pub fn verify_128s(message: WordSpan, sig: SphincsSignature) {
     let SphincsSignature { randomizer, pk_seed, pk_root, fors_sig } = sig;
 
     // Seed the hash function state.
     let ctx = initialize_hash_function(pk_seed);
 
-    // Compute the extended message digest which is concatenation of `mhash || tree_idx ||
-    // leaf_idx`.
+    // Initialize addresses
+    let mut tree_addr: Address = Default::default();
+    let mut wots_addr: Address = Default::default();
+    let mut wots_pk_addr: Address = Default::default();
+
+    tree_addr.set_address_type(AddressType::HASHTREE);
+    wots_addr.set_address_type(AddressType::WOTS);
+    wots_pk_addr.set_address_type(AddressType::FORSPK);
+
+    // Compute the extended message digest which is `mhash || tree_idx || leaf_idx`.
     let digest = hash_message_128s(randomizer, pk_seed, pk_root, message, SPX_DGST_BYTES);
 
     // Split the digest into the message hash, tree address and leaf index.
@@ -59,4 +68,12 @@ fn split_xdigest_128s(mut digest: WordSpan) -> XMessageDigest {
     let mhash = WordSpanTrait::new(words.into(), hi, 1);
 
     XMessageDigest { mhash, tree_address, leaf_idx }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_split_xdigest_128s() {}
 }

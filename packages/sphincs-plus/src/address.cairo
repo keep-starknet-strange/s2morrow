@@ -96,6 +96,17 @@ pub impl AddressImpl of AddressTrait {
         self.w5 = cd;
     }
 
+    fn set_chain_address(ref self: Address, chain_address: u8) {
+        // In WOTS address other bytes are not used and set to zero.
+        self.w4_b = chain_address.into() * 0x10000;
+    }
+
+    fn set_hash_address(ref self: Address, hash_address: u8) {
+        // In WOTS address other bytes are not used and set to zero.
+        // We use lower bytes for compatibility with [WordArray]
+        self.w5 = hash_address.into();
+    }
+
     fn to_word_array(self: Address) -> WordArray {
         WordArrayTrait::new(array![self.w0, self.w1, self.w2, self.w3, self.w4], self.w5, 2)
     }
