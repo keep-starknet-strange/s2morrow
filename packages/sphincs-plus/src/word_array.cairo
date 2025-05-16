@@ -64,16 +64,16 @@ pub impl WordArrayImpl of WordArrayTrait {
     /// Append a byte.
     fn append_u8(ref self: WordArray, value: u8) {
         if self.last_input_num_bytes == 0 {
-            self.last_input_word = value.into() * 0x1000000;
+            self.last_input_word = value.into();
             self.last_input_num_bytes = 1;
         } else if self.last_input_num_bytes == 1 {
-            self.last_input_word = self.last_input_word + value.into() * 0x10000;
+            self.last_input_word = self.last_input_word * 0x100 + value.into();
             self.last_input_num_bytes = 2;
         } else if self.last_input_num_bytes == 2 {
-            self.last_input_word = self.last_input_word + value.into() * 0x100;
+            self.last_input_word = self.last_input_word * 0x100 + value.into();
             self.last_input_num_bytes = 3;
         } else {
-            self.input.append(self.last_input_word + value.into());
+            self.input.append(self.last_input_word * 0x100 + value.into());
             self.last_input_word = 0;
             self.last_input_num_bytes = 0;
         }
@@ -118,7 +118,7 @@ pub mod hex {
             let lo = hex_char_to_nibble(hex_string[i + 1]);
             words.append_u8(hi * 16 + lo);
             i += 2;
-        };
+        }
 
         words
     }
@@ -143,7 +143,7 @@ pub mod hex {
                 result.append_byte(alphabet.at(l).expect('l'));
                 result.append_byte(alphabet.at(r).expect('r'));
             }
-        };
+        }
 
         result
     }

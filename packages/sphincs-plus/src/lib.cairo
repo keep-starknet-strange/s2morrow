@@ -5,12 +5,12 @@
 pub mod address;
 //pub mod blake2s;
 pub mod fors;
+pub mod hasher;
 pub mod params_128s;
+pub mod sha2;
 pub mod sphincs;
 pub mod word_array;
 pub mod wots;
-pub mod hasher;
-pub mod sha2;
 
 #[executable]
 fn main() {}

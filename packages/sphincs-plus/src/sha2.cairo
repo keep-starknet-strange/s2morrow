@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use core::num::traits::{OverflowingAdd, OverflowingMul};
 use core::integer::u32_safe_divmod;
+use core::num::traits::{OverflowingAdd, OverflowingMul};
 
 /// 8-element tuple of u32.
 type T8 = (u32, u32, u32, u32, u32, u32, u32, u32);
@@ -12,12 +12,13 @@ type T8 = (u32, u32, u32, u32, u32, u32, u32, u32);
 #[derive(Debug, Drop, Copy, Default)]
 pub struct Sha256State {
     pub h: T8,
-    pub bit_len: u32,
+    pub byte_len: u32,
 }
 
-/// Initializes the SHA-256 hasher state with IV.
+/// Initializes the SHA-256 hasher state with IV and resets the byte length.
 pub fn sha256_inc_init(ref state: Sha256State) {
     state.h = h;
+    state.byte_len = 0;
 }
 
 /// Updates the SHA-256 hasher state with the given data (data length must be a multiple of 16).
@@ -26,20 +27,22 @@ pub fn sha256_inc_update(ref state: Sha256State, mut data: Span<u32>) {
         state.h = sha256_inner(chunk.span(), state.h);
     }
     assert(data.is_empty(), 'unaligned sha256 block');
-    state.bit_len += data.len() * 32;
+    state.byte_len += data.len() * 4;
 }
 
 /// Finalizes the SHA-256 hasher state and returns the hash.
-/// 
+///
 /// Adds padding to the input array for SHA-256. The padding is defined as follows:
 /// 1. Append a single bit with value 1 to the end of the array.
 /// 2. Append zeros until the length of the array is 448 mod 512.
 /// 3. Append the length of the array in bits as a 64-bit number.
-/// 
+///
 /// Use last_input_word when the number of bytes in the last input word is less than 4.
-pub fn sha256_inc_finalize(ref state: Sha256State, mut input: Array<u32>, last_input_word: u32, last_input_num_bytes: u32) -> [u32; 8] {
-    state.bit_len += input.len() * 32 + last_input_num_bytes * 8;
-    
+pub fn sha256_inc_finalize(
+    ref state: Sha256State, mut input: Array<u32>, last_input_word: u32, last_input_num_bytes: u32,
+) -> [u32; 8] {
+    state.byte_len += input.len() * 4 + last_input_num_bytes;
+
     if last_input_num_bytes == 0 {
         input.append(0x80000000);
     } else {
@@ -57,8 +60,9 @@ pub fn sha256_inc_finalize(ref state: Sha256State, mut input: Array<u32>, last_i
     let remaining = 16 - ((input.len() + 1) % 16);
     append_zeros(ref input, remaining);
 
-    // NOTE: bit length up to 2^32-1.
-    input.append(state.bit_len);
+    // NOTE: bit length up to 2^32-1 (low 32 bits), we set high 32 bits to 0 on the previous step.
+    // This is a concious optimization.
+    input.append(state.byte_len * 8);
 
     let mut data = input.span();
     while let Some(chunk) = data.multi_pop_front::<16>() {
@@ -183,15 +187,14 @@ fn compression(wi: u32, ki: u32, h: T8) -> T8 {
 
 fn create_message_schedule(data: Span<u32>) -> Span<u32> {
     let mut result: Array<u32> = data.into();
-    for i in 16
-        ..64_usize {
-            let s0 = ssig0(*result[i - 15]);
-            let s1 = ssig1(*result[i - 2]);
-            let (tmp, _) = (*result[i - 16]).overflowing_add(s0);
-            let (tmp, _) = tmp.overflowing_add(*result[i - 7]);
-            let (res, _) = tmp.overflowing_add(s1);
-            result.append(res);
-        };
+    for i in 16..64_usize {
+        let s0 = ssig0(*result[i - 15]);
+        let s1 = ssig1(*result[i - 2]);
+        let (tmp, _) = (*result[i - 16]).overflowing_add(s0);
+        let (tmp, _) = tmp.overflowing_add(*result[i - 7]);
+        let (res, _) = tmp.overflowing_add(s1);
+        result.append(res);
+    }
     result.span()
 }
 
@@ -260,19 +263,33 @@ const k: [u32; 64] = [
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::word_array::hex::words_from_hex;
     use crate::word_array::WordArrayTrait;
-    
+    use crate::word_array::hex::words_from_hex;
+    use super::*;
+
     #[test]
     fn test_sha256_finalize() {
-        let buf = words_from_hex("002e82f752b663241e060000000100000000000000047c9935a0b07694aa0c6d10e4db6b1add");
+        let buf = words_from_hex(
+            "002e82f752b663241e060000000100000000000000047c9935a0b07694aa0c6d10e4db6b1add",
+        );
         let mut state = Sha256State {
-            h: (0x14163465, 0x04164476, 0xf4c272a1, 0xd0f2cd7e, 0xdf396a8b, 0x47ffef37, 0x41fe0476, 0xaa25036a),
-            bit_len: 0,
+            h: (
+                0x14163465,
+                0x04164476,
+                0xf4c272a1,
+                0xd0f2cd7e,
+                0xdf396a8b,
+                0x47ffef37,
+                0x41fe0476,
+                0xaa25036a,
+            ),
+            byte_len: 64,
         };
-        let expected = [0x9729f44d, 0x1c003350, 0x14a674be, 0xd98b2569, 0x15372d1c, 0x28e8a776, 0x3d1cded7, 0xd69a1852];
-        
+        let expected = [
+            0x9729f44d, 0x1c003350, 0x14a674be, 0xd98b2569, 0x15372d1c, 0x28e8a776, 0x3d1cded7,
+            0xd69a1852,
+        ];
+
         let (input, last_input_word, last_input_num_bytes) = buf.into_components();
 
         let res = sha256_inc_finalize(ref state, input, last_input_word, last_input_num_bytes);
