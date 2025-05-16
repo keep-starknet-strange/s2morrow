@@ -3,15 +3,33 @@
 // SPDX-License-Identifier: MIT
 
 use crate::params_128s::HashOutput;
-use crate::sha2::{Sha256State, sha256_inc_finalize};
+use crate::sha2::{Sha256State, sha256_inc_finalize, sha256_inc_init, sha256_inc_update};
 use crate::word_array::{WordArray, WordArrayTrait, WordSpan, WordSpanTrait};
 
+#[derive(Drop, Copy, Default, Debug)]
+pub struct SpxCtx {
+    pub state_seeded: Sha256State,
+}
+
+/// Absorb the constant pub_seed using one round of the compression function
+/// This initializes state_seeded and state_seeded_512, which can then be
+/// reused input thash
+pub fn initialize_hash_function(pk_seed: HashOutput) -> SpxCtx {
+    let mut data = pk_seed.span().into();
+    data.append_span(array![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].span());
+
+    let mut state: Sha256State = Default::default();
+    sha256_inc_init(ref state);
+    sha256_inc_update(ref state, data.span());
+
+    SpxCtx { state_seeded: state }
+}
+
 /// Compute a truncated hash of the data.
-pub fn thash_128s(mut data: WordSpan) -> HashOutput {
+pub fn thash_128s(ctx: SpxCtx, mut data: WordSpan) -> HashOutput {
     let (input, last_word, last_word_len) = data.into_components();
-    let mut state = Sha256State { h: (0, 0, 0, 0, 0, 0, 0, 0), byte_len: 0 };
     let [d0, d1, d2, d3, _, _, _, _] = sha256_inc_finalize(
-        ref state, input.into(), last_word, last_word_len,
+        ctx.state_seeded, input.into(), last_word, last_word_len,
     );
     [d0, d1, d2, d3]
 }
@@ -60,25 +78,16 @@ pub fn hash_message_128s(
 #[cfg(test)]
 mod tests {
     use crate::word_array::WordSpanTrait;
+    use crate::word_array::hex::words_from_hex;
     use super::*;
 
     #[test]
     fn test_thash_128s() {
-        let data = array![
-            12061,
-            501484376,
-            3892510720,
-            33095680,
-            0,
-            3662217216,
-            0,
-            0,
-            3513816658,
-            740138468,
-            3821323496,
-            1704729478,
-        ];
-        let hash = thash_128s(WordSpanTrait::new(data.span(), 0, 0));
-        //assert_eq!(hash, [776494396, 2105697836, 2177691252, 3527764120]);
+        let mut data = words_from_hex("00002f1d1de40b58e803000001f9000000000000da49"); // address
+        let (seed, _, _) = words_from_hex("d17096522c1d9de4e3c4c4e8659c1b86")
+            .into_components(); // sk seed
+        data.append_u32_span(seed.span()); // fors_leaf_addr
+        let hash = thash_128s(Default::default(), data.span());
+        assert_eq!(hash, [2384795752, 2382117612, 736107028, 3412802428]);
     }
 }

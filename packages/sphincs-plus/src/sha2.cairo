@@ -39,7 +39,7 @@ pub fn sha256_inc_update(ref state: Sha256State, mut data: Span<u32>) {
 ///
 /// Use last_input_word when the number of bytes in the last input word is less than 4.
 pub fn sha256_inc_finalize(
-    ref state: Sha256State, mut input: Array<u32>, last_input_word: u32, last_input_num_bytes: u32,
+    mut state: Sha256State, mut input: Array<u32>, last_input_word: u32, last_input_num_bytes: u32,
 ) -> [u32; 8] {
     state.byte_len += input.len() * 4 + last_input_num_bytes;
 
@@ -208,7 +208,7 @@ fn maj(x: u32, y: u32, z: u32) -> u32 {
 
 fn bsig0(x: u32) -> u32 {
     let (rhs, _) = x.overflowing_mul(0x40000000);
-    let x1 = (x / 0x4) | rhs;
+    let x1 = (x / 0x4) | (rhs);
     let (rhs, _) = x.overflowing_mul(0x80000);
     let x2 = (x / 0x2000) | rhs;
     let (rhs, _) = x.overflowing_mul(0x400);
@@ -292,7 +292,7 @@ mod tests {
 
         let (input, last_input_word, last_input_num_bytes) = buf.into_components();
 
-        let res = sha256_inc_finalize(ref state, input, last_input_word, last_input_num_bytes);
+        let res = sha256_inc_finalize(state, input, last_input_word, last_input_num_bytes);
         assert_eq!(res, expected);
     }
 }

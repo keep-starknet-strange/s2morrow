@@ -79,6 +79,32 @@ pub impl WordArrayImpl of WordArrayTrait {
         }
     }
 
+    /// Append a 4-byte word in big-endian order.
+    fn append_u32_be(ref self: WordArray, value: u32) {
+        if self.last_input_num_bytes == 0 {
+            self.input.append(value)
+        } else if self.last_input_num_bytes == 1 {
+            let (abc, d) = DivRem::div_rem(value, 0x100);
+            self.input.append(self.last_input_word * 0x1000000 + abc);
+            self.last_input_word = d;
+        } else if self.last_input_num_bytes == 2 {
+            let (ab, cd) = DivRem::div_rem(value, 0x10000);
+            self.input.append(self.last_input_word * 0x10000 + ab);
+            self.last_input_word = cd;
+        } else {
+            let (a, bcd) = DivRem::div_rem(value, 0x1000000);
+            self.input.append(self.last_input_word * 0x100 + a);
+            self.last_input_word = bcd;
+        }
+    }
+
+    /// Append a span of 4-byte words in big-endian order.
+    fn append_u32_span(ref self: WordArray, mut span: Span<u32>) {
+        while let Option::Some(word) = span.pop_front() {
+            self.append_u32_be(*word);
+        }
+    }
+
     /// Create a [WordSpan] out of the array snapshot.
     fn span(self: @WordArray) -> WordSpan {
         WordSpan {

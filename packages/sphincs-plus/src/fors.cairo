@@ -8,7 +8,7 @@
 
 use core::traits::DivRem;
 use crate::address::{Address, AddressTrait, AddressType};
-use crate::hasher::thash_128s;
+use crate::hasher::{SpxCtx, thash_128s};
 use crate::params_128s::{HashOutput, SPX_FORS_BASE_OFFSET, SPX_FORS_HEIGHT, SPX_FORS_TREES};
 use crate::word_array::{WordArrayTrait, WordSpan, WordSpanTrait};
 
@@ -24,7 +24,9 @@ pub struct ForsTreeSignature {
 }
 
 /// Derive FORS public key from a signature.
-pub fn fors_pk_from_sig(sig: ForsSignature, mhash: WordSpan, address: Address) -> HashOutput {
+pub fn fors_pk_from_sig(
+    ctx: SpxCtx, sig: ForsSignature, mhash: WordSpan, address: Address,
+) -> HashOutput {
     let mut fors_pk_addr = address;
     let mut fors_tree_addr = address;
 
@@ -44,7 +46,7 @@ pub fn fors_pk_from_sig(sig: ForsSignature, mhash: WordSpan, address: Address) -
         fors_tree_addr.set_fors_tree_index(idx_offset + leaf_idx);
 
         // Derive the leaf hash from the secret key seed and tree address.
-        let leaf_hash = fors_sk_to_leaf(sk_seed, fors_tree_addr);
+        let leaf_hash = fors_sk_to_leaf(ctx, sk_seed, fors_tree_addr);
 
         // Derive the corresponding root node of this tree.
         // compute_root(
@@ -59,10 +61,10 @@ pub fn fors_pk_from_sig(sig: ForsSignature, mhash: WordSpan, address: Address) -
 }
 
 /// Compute the leaf from the revealed secret key (which is part of the signature) and tree address.
-pub fn fors_sk_to_leaf(sk_seed: HashOutput, address: Address) -> HashOutput {
-    let mut input = address.to_array();
-    input.append_span(sk_seed.span());
-    thash_128s(WordSpanTrait::new(input.span(), 0, 0))
+pub fn fors_sk_to_leaf(ctx: SpxCtx, sk_seed: HashOutput, address: Address) -> HashOutput {
+    let mut input = address.to_word_array();
+    input.append_u32_span(sk_seed.span());
+    thash_128s(ctx, input.span())
 }
 
 /// Convert FORS mhash to leaves indices.
