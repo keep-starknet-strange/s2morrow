@@ -44,41 +44,43 @@ pub fn hash_message_128s(
     message: WordSpan,
     output_len: u32,
 ) -> WordArray {
-    Default::default()
-    // let mut data: Array<u32> = array![];
-// data.append_span(randomizer.span());
-// data.append_span(pk_seed.span());
-// data.append_span(pk_root.span());
+    let mut data: Array<u32> = array![];
+    data.append_span(randomizer.span());
+    data.append_span(pk_seed.span());
+    data.append_span(pk_root.span());
 
-    // let (msg_words, msg_last_word, msg_last_word_len) = message.into_components();
-// data.append_span(msg_words);
+    let (msg_words, msg_last_word, msg_last_word_len) = message.into_components();
+    data.append_span(msg_words);
 
-    // // Compute the seed for XOF.
-// let seed = blake2s_32(WordSpanTrait::new(data.span(), msg_last_word, msg_last_word_len));
+    let mut state: Sha256State = Default::default();
+    sha256_inc_init(ref state);
 
-    // let mut xof_data: Array<u32> = array![];
-// xof_data.append_span(randomizer.span());
-// xof_data.append_span(pk_seed.span());
-// xof_data.append_span(seed.span());
-// xof_data.append(0); // MGF1 counter = 0
+    // Compute the seed for XOF.
+    let seed = sha256_inc_finalize(state, data, msg_last_word, msg_last_word_len);
 
-    // // Apply MGF1 to the seed.
-// let mut buffer = blake2s_32(WordSpanTrait::new(xof_data.span(), 0, 0)).unbox().span();
+    let mut xof_data: Array<u32> = array![];
+    xof_data.append_span(randomizer.span());
+    xof_data.append_span(pk_seed.span());
+    xof_data.append_span(seed.span());
+    xof_data.append(0); // MGF1 counter = 0
 
-    // // Construct the digest from the extended output.
-// // NOTE: we haven't cleared the LSB of the last word, has to be handled correctly.
-// let last_word = *buffer.pop_back().unwrap();
+    // Apply MGF1 to the seed.
+    let mut buffer = sha256_inc_finalize(state, xof_data.into(), 0, 0).span();
 
-    // // Construct the digest from the first 7 words (28 bits) and add 2 bytes from the last word.
-// let res = WordArrayTrait::new(buffer.into(), last_word, 2);
-// assert(res.byte_len() == output_len, 'Invalid extended digest length');
-// res
+    // Construct the digest from the extended output.
+    // NOTE: we haven't cleared the LSB of the last word, has to be handled correctly.
+    let last_word = *buffer.pop_back().unwrap();
+
+    // Construct the digest from the first 7 words (28 bits) and add 2 higer bytes from the last
+    // word.
+    let res = WordArrayTrait::new(buffer.into(), last_word / 0x10000, 2);
+    assert(res.byte_len() == output_len, 'Invalid extended digest length');
+    res
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::word_array::WordSpanTrait;
-    use crate::word_array::hex::words_from_hex;
+    use crate::word_array::hex::{words_from_hex, words_to_hex};
     use super::*;
 
     #[test]
@@ -89,5 +91,18 @@ mod tests {
         data.append_u32_span(seed.span()); // fors_leaf_addr
         let hash = thash_128s(Default::default(), data.span());
         assert_eq!(hash, [2384795752, 2382117612, 736107028, 3412802428]);
+    }
+
+    #[test]
+    fn test_hash_message_128s() {
+        let message = words_from_hex(
+            "1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b",
+        );
+        let randomizer = [0xffffffff, 0x801de0fe, 0x12112e95, 0xf6f45d5b];
+        let pk_seed = [0xbd1e2d02, 0x898d6567, 0xa1e03de5, 0x936fc5c9];
+        let pk_root = [0x87b6c08a, 0xb0535371, 0x1dbf3a5c, 0x273e2aa8];
+        let hash = hash_message_128s(randomizer, pk_seed, pk_root, message.span(), 30);
+        let res = words_to_hex(hash.span());
+        assert_eq!(res, "c7a141bc87731f09615dc587e6552c3699be19c948ec4ba9fd922626f153");
     }
 }
