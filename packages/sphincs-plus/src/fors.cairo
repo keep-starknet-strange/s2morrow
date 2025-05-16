@@ -7,10 +7,10 @@
 //! overview and https://www.di-mgt.com.au/pqc-09-fors-sig.html for a step-by-step construction.
 
 use core::traits::DivRem;
-use crate::params_128s::{HashOutput, SPX_FORS_HEIGHT, SPX_FORS_TREES, SPX_FORS_BASE_OFFSET};
-use crate::word_array::{WordSpan, WordSpanTrait, WordArrayTrait};
 use crate::address::{Address, AddressTrait, AddressType};
 use crate::hasher::thash_128s;
+use crate::params_128s::{HashOutput, SPX_FORS_BASE_OFFSET, SPX_FORS_HEIGHT, SPX_FORS_TREES};
+use crate::word_array::{WordArrayTrait, WordSpan, WordSpanTrait};
 
 #[derive(Drop, Copy)]
 pub struct ForsSignature {
@@ -43,10 +43,10 @@ pub fn fors_pk_from_sig(sig: ForsSignature, mhash: WordSpan, address: Address) -
         fors_tree_addr.set_fors_tree_height(0);
         fors_tree_addr.set_fors_tree_index(idx_offset + leaf_idx);
 
-        // Derive the leaf hash from the secret key seed and tree address. 
+        // Derive the leaf hash from the secret key seed and tree address.
         let leaf_hash = fors_sk_to_leaf(sk_seed, fors_tree_addr);
 
-        // Derive the corresponding root node of this tree. 
+        // Derive the corresponding root node of this tree.
         // compute_root(
         //     &mut roots[i*SPX_N..], &leaf, indices[i], idx_offset,
         //     &sig[idx..], SPX_FORS_HEIGHT as u32, ctx, &mut fors_tree_addr
@@ -66,11 +66,11 @@ pub fn fors_sk_to_leaf(sk_seed: HashOutput, address: Address) -> HashOutput {
 }
 
 /// Convert FORS mhash to leaves indices.
-/// 
+///
 /// A simplified flow:
 /// - reinterpret mhash as a little-endian integer
 /// - calculate SPX_FORS_TREES remainders modulo SPX_FORS_HEIGHT
-/// 
+///
 /// In other words, we are iterating over the mhash in reverse byte order,
 /// interpreting every SPX_FORS_HEIGHT chunk of bits as a little-endian integer.
 fn message_to_indices_128s(mut mhash: WordSpan) -> Array<u32> {
@@ -83,10 +83,9 @@ fn message_to_indices_128s(mut mhash: WordSpan) -> Array<u32> {
     // Mhash structure: words are byte-reversed, we are going in LE order.
     // [8|4 4|8, 8] [4 4|8 8|4, 4] [8 8|4 4|8] [8|4 4|8, 8] [4 8|4 4|8, 4] [8]
     while let Some((mut word, num_bytes)) = mhash.pop_front() {
-        // Our word [ab cd ef gh] is in BE, we need to decompose it into bytes and reverse
-        let (ab, cdefgh) = DivRem::div_rem(word, 0x1000000);
-
         if num_bytes == 4 {
+            // Our word [ab cd ef gh] is in BE, we need to decompose it into bytes
+            let (ab, cdefgh) = DivRem::div_rem(word, 0x1000000);
             let (cd, efgh) = DivRem::div_rem(cdefgh, 0x10000);
             let (ef, gh) = DivRem::div_rem(efgh, 0x100);
 
@@ -112,13 +111,14 @@ fn message_to_indices_128s(mut mhash: WordSpan) -> Array<u32> {
                 acc = 0;
                 acc_bits = 0;
             } else {
-                panic!("invalid acc_bits (4)");
+                assert(false, 'invalid acc_bits (4)');
             }
         } else if num_bytes == 1 { // [abx]
+            // Last word is one byte (lowest)
             assert(acc_bits == 4, 'invalid acc_bits (1)');
-            indices.append(ab * 0x10 + acc);
+            indices.append(word * 0x10 + acc);
         } else {
-            panic!("invalid mhash length");
+            assert(false, 'invalid mhash length');
         }
     }
 
@@ -127,15 +127,18 @@ fn message_to_indices_128s(mut mhash: WordSpan) -> Array<u32> {
 
 #[cfg(test)]
 mod tests {
+    use crate::word_array::WordArrayTrait;
+    use crate::word_array::hex::words_from_hex;
     use super::*;
-    use crate::word_array::{WordArrayTrait, hex::words_from_hex};
-    
+
     #[test]
     fn test_message_to_indices_128s() {
         let mhash = words_from_hex("6059c80500bb1e198b352d9edde57e7550ccc7a97e");
         assert_eq!(mhash.byte_len(), 21);
         let indices = message_to_indices_128s(mhash.span());
-        let expected = array![2400, 3205, 5, 2992, 2334, 2225, 3381, 2530, 1501, 2030, 117, 3269, 2503, 2026];
+        let expected = array![
+            2400, 3205, 5, 2992, 2334, 2225, 3381, 2530, 1501, 2030, 117, 3269, 2503, 2026,
+        ];
         assert_eq!(expected, indices);
     }
 }

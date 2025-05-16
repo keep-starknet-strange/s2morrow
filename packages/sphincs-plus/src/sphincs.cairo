@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: MIT
 
 use crate::fors::{ForsSignature, fors_pk_from_sig};
+use crate::hasher::hash_message_128s;
 use crate::params_128s::{HashOutput, SPX_DGST_BYTES};
 use crate::word_array::{WordArray, WordArrayTrait, WordSpan, WordSpanTrait};
-use crate::hasher::hash_message_128s;
 
 #[derive(Drop)]
 pub struct SphincsSignature {

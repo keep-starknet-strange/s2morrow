@@ -8,11 +8,11 @@
 /// FORS address layout:
 ///  0       4      8        12       16       20
 /// [0 111] [1111] [1 2 xx] [3 3 xx] [x 4 55] [55 xx]
-/// 
+///
 /// WOTS address layout:
 ///  0       4      8        12       16       20
 /// [0 111] [1111] [1 2 xx] [3 3 xx] [x 6 xx] [x 7 xx]
-/// 
+///
 /// Where:
 /// 0. Hypertree layer (1 byte)
 /// 1. Hypertree address (8 bytes)
@@ -41,13 +41,13 @@ pub struct Address {
 
 #[derive(Drop, Copy)]
 pub enum AddressType {
-    WOTS,     // 0
-    WOTSPK,   // 1
+    WOTS, // 0
+    WOTSPK, // 1
     HASHTREE, // 2
     FORSTREE, // 3
-    FORSPK,   // 4
-    WOTSPRF,  // 5
-    FORSPRF,  // 6
+    FORSPK, // 4
+    WOTSPRF, // 5
+    FORSPRF // 6
 }
 
 #[generate_trait]
@@ -96,16 +96,7 @@ pub impl AddressImpl of AddressTrait {
 
     fn to_array(self: Address) -> Array<u32> {
         // NOTE: we add two trailing zero words
-        array![
-            self.w0,
-            self.w1,
-            self.w2,
-            self.w3,
-            self.w4,
-            self.w5,
-            0,
-            0,
-        ]
+        array![self.w0, self.w1, self.w2, self.w3, self.w4, self.w5, 0, 0]
     }
 }
 
@@ -132,7 +123,7 @@ impl AddressTypeToU32 of Into<AddressType, u32> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_fors_tree_address() {
         let mut address: Address = Default::default();
