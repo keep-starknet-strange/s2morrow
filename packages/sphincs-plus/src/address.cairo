@@ -5,13 +5,15 @@
 //! Address structure aligned for use with SHA2/Blake2s hash functions.
 //! See https://www.di-mgt.com.au/pqc-09-fors-sig.html for layout details.
 
+use crate::word_array::{WordArray, WordArrayTrait};
+
 /// FORS address layout:
 ///  0       4      8        12       16       20
-/// [0 111] [1111] [1 2 xx] [3 3 xx] [x 4 55] [55 xx]
+/// [0 111] [1111] [1 2 xx] [3 3 xx] [x 4 55] [55]
 ///
 /// WOTS address layout:
 ///  0       4      8        12       16       20
-/// [0 111] [1111] [1 2 xx] [3 3 xx] [x 6 xx] [x 7 xx]
+/// [0 111] [1111] [1 2 xx] [3 3 xx] [x 6 xx] [x 7]
 ///
 /// Where:
 /// 0. Hypertree layer (1 byte)
@@ -29,7 +31,7 @@ pub struct Address {
     w2: u32, // hypertree address, address type
     w3: u32, // keypair high/low bytes
     w4: u32, // forst tree height | wots chain address
-    w5: u32, // forst tree index | wots hash address
+    w5: u32, // forst tree index | wots hash address (we use lower bytes)
     // Cached values
     w0_a: u32,
     w0_bcd: u32,
@@ -90,13 +92,12 @@ pub impl AddressImpl of AddressTrait {
         self.w4_cd = ab;
         // we don't care about the highest byte (it is not used and set to zero)
         self.w4 = self.w4_b + self.w4_cd;
-        // we don't care about the lowest 2 bytes (they are not used and set to zero)
-        self.w5 = cd * 0x10000;
+        // we use lower bytes for compatibility with [WordArray]
+        self.w5 = cd;
     }
 
-    fn to_array(self: Address) -> Array<u32> {
-        // NOTE: we add two trailing zero words
-        array![self.w0, self.w1, self.w2, self.w3, self.w4, self.w5, 0, 0]
+    fn to_word_array(self: Address) -> WordArray {
+        WordArrayTrait::new(array![self.w0, self.w1, self.w2, self.w3, self.w4], self.w5, 2)
     }
 }
 
@@ -122,6 +123,7 @@ impl AddressTypeToU32 of Into<AddressType, u32> {
 
 #[cfg(test)]
 mod tests {
+    use crate::word_array::hex::words_to_hex;
     use super::*;
 
     #[test]
@@ -133,8 +135,8 @@ mod tests {
         address.set_keypair(102);
         address.set_fors_tree_height(0);
         address.set_fors_tree_index(2765);
-        let array = address.to_array();
-        let expected = array![13199, 952634960, 721616896, 6684672, 0, 181207040, 0, 0];
-        assert_eq!(array, expected);
+        let res = words_to_hex(address.to_word_array().span());
+        let expected = "0000338f38c80e502b03000000660000000000000acd";
+        assert_eq!(res, expected);
     }
 }

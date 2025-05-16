@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 use crate::fors::{ForsSignature, fors_pk_from_sig};
-use crate::hasher::hash_message_128s;
+use crate::hasher::{hash_message_128s, initialize_hash_function};
 use crate::params_128s::{HashOutput, SPX_DGST_BYTES};
 use crate::word_array::{WordArray, WordArrayTrait, WordSpan, WordSpanTrait};
 
@@ -26,6 +26,9 @@ pub struct XMessageDigest {
 pub fn verify_blake_128s(message: WordSpan, sig: SphincsSignature) {
     let SphincsSignature { randomizer, pk_seed, pk_root, fors_sig } = sig;
 
+    // Seed the hash function state.
+    let ctx = initialize_hash_function(pk_seed);
+
     // Compute the extended message digest which is concatenation of `mhash || tree_idx ||
     // leaf_idx`.
     let digest = hash_message_128s(randomizer, pk_seed, pk_root, message, SPX_DGST_BYTES);
@@ -34,7 +37,7 @@ pub fn verify_blake_128s(message: WordSpan, sig: SphincsSignature) {
     let XMessageDigest { mhash, tree_address, leaf_idx } = split_xdigest_128s(digest.span());
 
     // Compute FORS public key (root) from the signature.
-    let fors_pk = fors_pk_from_sig(fors_sig, mhash, Default::default());
+    let fors_pk = fors_pk_from_sig(ctx, fors_sig, mhash, Default::default());
 }
 
 /// Split the extended message digest into the message hash, tree address and leaf index.
