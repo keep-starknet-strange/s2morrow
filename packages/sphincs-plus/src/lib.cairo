@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MIT
 
 pub mod address;
-//pub mod blake2s;
 pub mod fors;
 pub mod hasher;
 pub mod params_128s;

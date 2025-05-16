@@ -20,18 +20,18 @@ use crate::word_array::{WordArray, WordArrayTrait};
 /// 1. Hypertree address (8 bytes)
 /// 2. Address type (1 byte)
 /// 3. Keypair hi/lo (2 bytes)
-/// 4. Forst tree height (1 byte)
-/// 5. Forst tree index (4 bytes)
+/// 4. Tree height (1 byte)
+/// 5. Tree index (4 bytes)
 /// 6. Wots chain address (1 byte)
 /// 7. Wots hash address (1 byte)
-#[derive(Drop, Copy, Default)]
+#[derive(Drop, Copy, Default, Debug)]
 pub struct Address {
     w0: u32, // layer, hypertree address
     w1: u32, // hypertree address 
     w2: u32, // hypertree address, address type
     w3: u32, // keypair high/low bytes
-    w4: u32, // forst tree height | wots chain address
-    w5: u32, // forst tree index | wots hash address (we use lower bytes)
+    w4: u32, // tree height | wots chain address
+    w5: u32, // tree index | wots hash address (we use lower bytes)
     // Cached values
     w0_a: u32,
     w0_bcd: u32,
@@ -81,13 +81,13 @@ pub impl AddressImpl of AddressTrait {
         self.w3 = keypair.into() * 0x10000;
     }
 
-    fn set_fors_tree_height(ref self: Address, tree_height: u8) {
+    fn set_tree_height(ref self: Address, tree_height: u8) {
         self.w4_b = tree_height.into() * 0x10000;
         // we don't care about the highest byte (it is not used and set to zero)
         self.w4 = self.w4_b + self.w4_cd;
     }
 
-    fn set_fors_tree_index(ref self: Address, tree_index: u32) {
+    fn set_tree_index(ref self: Address, tree_index: u32) {
         let (ab, cd) = DivRem::div_rem(tree_index, 0x10000);
         self.w4_cd = ab;
         // we don't care about the highest byte (it is not used and set to zero)
@@ -133,8 +133,8 @@ mod tests {
         address.set_hypertree_address(14512697849565227);
         address.set_address_type(AddressType::FORSTREE);
         address.set_keypair(102);
-        address.set_fors_tree_height(0);
-        address.set_fors_tree_index(2765);
+        address.set_tree_height(0);
+        address.set_tree_index(2765);
         let res = words_to_hex(address.to_word_array().span());
         let expected = "0000338f38c80e502b03000000660000000000000acd";
         assert_eq!(res, expected);
