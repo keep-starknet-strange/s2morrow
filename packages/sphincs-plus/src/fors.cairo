@@ -16,7 +16,7 @@ use crate::word_array::{WordSpan, WordSpanTrait};
 pub type ForsSignature = [ForsTreeSignature; SPX_FORS_TREES];
 
 /// FORS tree signature.
-#[derive(Drop, Copy)]
+#[derive(Drop, Copy, Serde, Default)]
 pub struct ForsTreeSignature {
     pub sk_seed: HashOutput,
     pub auth_path: [HashOutput; SPX_FORS_HEIGHT - 1],
@@ -36,8 +36,6 @@ pub fn fors_pk_from_sig(
     let mut indices = message_to_indices_128s(mhash);
     // Offset for the leaves indices
     let mut idx_offset = 0;
-    // FORS trees height
-    let tree_height: u8 = SPX_FORS_HEIGHT.try_into().unwrap();
     // FORS roots
     let mut roots = array![];
 
@@ -47,16 +45,15 @@ pub fn fors_pk_from_sig(
         let ForsTreeSignature { sk_seed, auth_path } = *fors_tree_sig;
         let leaf_idx = indices.pop_front().unwrap();
 
-        fors_tree_addr.set_tree_height(0);
+        // NOTE: already zero `fors_tree_addr.set_tree_height(0);`
         fors_tree_addr.set_tree_index(idx_offset + leaf_idx);
 
         // Derive the leaf hash from the secret key seed and tree address.
         let leaf = thash_128s(ctx, fors_tree_addr, sk_seed.span());
 
         // Derive the corresponding root node of this tree.
-        let root = compute_root(
-            ctx, fors_tree_addr, leaf, auth_path.span(), leaf_idx, idx_offset, tree_height,
-        );
+        // Auth path has fixed length, so we don't need to assert tree height.
+        let root = compute_root(ctx, fors_tree_addr, leaf, auth_path.span(), leaf_idx, idx_offset);
         roots.append_span(root.span());
 
         idx_offset += SPX_FORS_BASE_OFFSET;
