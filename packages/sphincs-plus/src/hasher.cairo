@@ -73,8 +73,7 @@ pub fn hash_message_128s(
     // NOTE: we haven't cleared the LSB of the last word, has to be handled correctly.
     let last_word = *buffer.pop_back().unwrap();
 
-    // Construct the digest from the first 7 words (28 bits) and add 2 higer bytes from the last
-    // word.
+    // Construct the digest from the first 7 words (28 bits) and add 2 bytes from the last word.
     let res = WordArrayTrait::new(buffer.into(), last_word / 0x10000, 2);
     assert(res.byte_len() == output_len, 'Invalid extended digest length');
     res
@@ -88,7 +87,6 @@ pub fn compute_root(
     mut auth_path: Span<HashOutput>,
     mut leaf_idx: u32,
     mut idx_offset: u32,
-    tree_height: u8,
 ) -> HashOutput {
     let mut node = leaf;
     let mut i = 0;
@@ -115,7 +113,6 @@ pub fn compute_root(
         node = thash_128s(ctx, address, buffer.span());
     }
 
-    assert(i == tree_height, 'Invalid auth path length');
     node
 }
 
@@ -177,7 +174,7 @@ mod tests {
             [1847957826, 195918516, 131309271, 2628527584],
         ];
         let root = compute_root(
-            Default::default(), address, leaf, auth_path.span(), leaf_idx, idx_offset, 12,
+            Default::default(), address, leaf, auth_path.span(), leaf_idx, idx_offset,
         );
         assert_eq!(root, [3756782339, 3014392485, 518995719, 3556760177]);
     }

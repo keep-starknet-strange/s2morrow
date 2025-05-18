@@ -42,3 +42,37 @@ pub const SPX_WOTS_LEN2: usize = 3;
 pub const SPX_WOTS_LEN: usize = SPX_WOTS_LEN1 + SPX_WOTS_LEN2; // 35
 /// Hash output.
 pub type HashOutput = [u32; 4];
+
+/// Serialize and deserialize HashOutput.
+pub impl HashOutputSerde of Serde<HashOutput> {
+    fn serialize(self: @HashOutput, ref output: Array<felt252>) {
+        for elt in self.span() {
+            output.append((*elt).into());
+        }
+    }
+
+    fn deserialize(ref serialized: Span<felt252>) -> Option<HashOutput> {
+        let h0: u32 = (*serialized.pop_front().expect('h0')).try_into().unwrap();
+        let h1: u32 = (*serialized.pop_front().expect('h1')).try_into().unwrap();
+        let h2: u32 = (*serialized.pop_front().expect('h2')).try_into().unwrap();
+        let h3: u32 = (*serialized.pop_front().expect('h3')).try_into().unwrap();
+        Some([h0, h1, h2, h3])
+    }
+}
+
+pub fn serialize_hash_output_span(mut input: Span<HashOutput>, ref output: Array<felt252>) {
+    while let Some(elt) = input.pop_front() {
+        HashOutputSerde::serialize(elt, ref output);
+    }
+}
+
+pub fn deserialize_hash_output_array<const N: usize>(
+    ref serialized: Span<felt252>,
+) -> Array<HashOutput> {
+    let mut res = array![];
+    for i in 0..N {
+        let elt = HashOutputSerde::deserialize(ref serialized).expect(i.into());
+        res.append(elt);
+    }
+    res
+}

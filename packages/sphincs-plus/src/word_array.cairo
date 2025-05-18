@@ -9,7 +9,7 @@
 //! hash function which operates on 4-byte words.
 
 /// Array of 4-byte words where the last word can be partial.
-#[derive(Drop, Debug, Default, PartialEq)]
+#[derive(Drop, Debug, Serde, Default, PartialEq)]
 pub struct WordArray {
     input: Array<u32>,
     last_input_word: u32,

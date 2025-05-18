@@ -10,15 +10,30 @@ pub mod sha2;
 pub mod sphincs;
 pub mod word_array;
 pub mod wots;
+use crate::sphincs::SphincsSignature;
+use crate::word_array::{WordArray, WordArrayTrait};
+
+#[derive(Drop, Serde, Default)]
+pub struct Args {
+    /// Sphincs+ signature.
+    pub sig: SphincsSignature,
+    /// Message.
+    pub message: WordArray,
+}
 
 #[executable]
-fn main() -> [u32; 8] {
-    let mut state: sha2::Sha256State = Default::default();
-    sha2::sha256_inc_init(ref state);
-    let res = sha2::sha256_inc_finalize(state, array![0, 1, 2, 3, 4, 5, 6, 7, 8], 9, 1);
-    let expected = [
-        3343000549, 2296934785, 582871359, 984521232, 1002196264, 2637335342, 930443213, 885203535,
-    ];
-    assert(res == expected, 'aaa');
-    res
+fn main() {
+    //let Args { sig, message } = args;
+
+    let sig: SphincsSignature = Default::default();
+    let message = WordArrayTrait::new(array![0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08], 0, 0);
+
+    let mut serialized = array![];
+    Serde::serialize(@sig, ref serialized);
+    Serde::serialize(@message, ref serialized);
+
+    //println!("serialized: {:?}", serialized);
+
+    let res = sphincs::verify_128s(message.span(), sig);
+    //assert(res, 'invalid signature');
 }
