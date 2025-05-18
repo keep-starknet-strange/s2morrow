@@ -22,17 +22,8 @@ pub struct Args {
 }
 
 #[executable]
-fn main() {
-    //let Args { sig, message } = args;
-
-    let sig: SphincsSignature = Default::default();
-    let message = WordArrayTrait::new(array![0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08], 0, 0);
-
-    let mut serialized = array![];
-    Serde::serialize(@sig, ref serialized);
-    Serde::serialize(@message, ref serialized);
-
-    //println!("serialized: {:?}", serialized);
+fn main(args: Args) {
+    let Args { sig, message } = args;
 
     let res = sphincs::verify_128s(message.span(), sig);
     //assert(res, 'invalid signature');

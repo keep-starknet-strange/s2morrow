@@ -8,8 +8,8 @@
 
 use core::traits::DivRem;
 use crate::address::{Address, AddressTrait, AddressType};
-use crate::hasher::{SpxCtx, compute_root, thash_128s};
-use crate::params_128s::{HashOutput, SPX_FORS_BASE_OFFSET, SPX_FORS_HEIGHT, SPX_FORS_TREES};
+use crate::hasher::{HashOutput, SpxCtx, compute_root, thash_128s};
+use crate::params_128s::{SPX_FORS_BASE_OFFSET, SPX_FORS_HEIGHT, SPX_FORS_TREES};
 use crate::word_array::{WordSpan, WordSpanTrait};
 
 /// FORS signature.

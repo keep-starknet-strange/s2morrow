@@ -3,9 +3,13 @@
 // SPDX-License-Identifier: MIT
 
 use crate::address::{Address, AddressTrait, AddressType};
-use crate::params_128s::HashOutput;
+use crate::params_128s::SPX_HASH_LEN;
 use crate::sha2::{Sha256State, sha256_inc_finalize, sha256_inc_init, sha256_inc_update};
 use crate::word_array::{WordArray, WordArrayTrait, WordSpan, WordSpanTrait};
+
+/// Hash output.
+pub type HashOutput = [u32; SPX_HASH_LEN];
+
 #[derive(Drop, Copy, Default, Debug)]
 pub struct SpxCtx {
     pub state_seeded: Sha256State,
@@ -114,6 +118,23 @@ pub fn compute_root(
     }
 
     node
+}
+
+/// Serialize and deserialize HashOutput.
+pub impl HashOutputSerde of Serde<HashOutput> {
+    fn serialize(self: @HashOutput, ref output: Array<felt252>) {
+        for elt in self.span() {
+            output.append((*elt).into());
+        }
+    }
+
+    fn deserialize(ref serialized: Span<felt252>) -> Option<HashOutput> {
+        let h0: u32 = (*serialized.pop_front().expect('h0')).try_into().unwrap();
+        let h1: u32 = (*serialized.pop_front().expect('h1')).try_into().unwrap();
+        let h2: u32 = (*serialized.pop_front().expect('h2')).try_into().unwrap();
+        let h3: u32 = (*serialized.pop_front().expect('h3')).try_into().unwrap();
+        Some([h0, h1, h2, h3])
+    }
 }
 
 #[cfg(test)]

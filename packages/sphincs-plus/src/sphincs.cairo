@@ -4,8 +4,10 @@
 
 use crate::address::{Address, AddressTrait, AddressType};
 use crate::fors::{ForsSignature, fors_pk_from_sig};
-use crate::hasher::{compute_root, hash_message_128s, initialize_hash_function, thash_128s};
-use crate::params_128s::{HashOutput, SPX_D, SPX_DGST_BYTES, SPX_TREE_HEIGHT};
+use crate::hasher::{
+    HashOutput, compute_root, hash_message_128s, initialize_hash_function, thash_128s,
+};
+use crate::params_128s::{SPX_D, SPX_DGST_BYTES, SPX_TREE_HEIGHT};
 use crate::word_array::{WordArrayTrait, WordSpan, WordSpanTrait};
 use crate::wots::{WotsSignature, WotsSignatureDefault, WotsSignatureSerde, wots_pk_from_sig};
 

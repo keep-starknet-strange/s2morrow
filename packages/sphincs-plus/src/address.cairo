@@ -99,6 +99,8 @@ pub impl AddressImpl of AddressTrait {
     fn set_chain_address(ref self: Address, chain_address: u8) {
         // In WOTS address other bytes are not used and set to zero.
         self.w4_b = chain_address.into() * 0x10000;
+        // Other bytes are unused
+        self.w4 = self.w4_b
     }
 
     fn set_hash_address(ref self: Address, hash_address: u8) {
