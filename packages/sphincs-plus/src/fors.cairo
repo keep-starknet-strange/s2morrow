@@ -20,6 +20,7 @@ pub type ForsSignature = [ForsTreeSignature; SPX_FORS_TREES];
 pub struct ForsTreeSignature {
     pub sk_seed: HashOutput,
     pub auth_path: [HashOutput; SPX_FORS_HEIGHT - 1],
+    _unused: HashOutput,
 }
 
 /// Derive FORS public key from a signature.
@@ -42,7 +43,7 @@ pub fn fors_pk_from_sig(
     let mut fors_sig = sig.span();
 
     while let Some(fors_tree_sig) = fors_sig.pop_front() {
-        let ForsTreeSignature { sk_seed, auth_path } = *fors_tree_sig;
+        let ForsTreeSignature { sk_seed, auth_path, _unused: _ } = *fors_tree_sig;
         let leaf_idx = indices.pop_front().unwrap();
 
         // NOTE: already zero `fors_tree_addr.set_tree_height(0);`
@@ -55,6 +56,8 @@ pub fn fors_pk_from_sig(
         // Auth path has fixed length, so we don't need to assert tree height.
         let root = compute_root(ctx, fors_tree_addr, leaf, auth_path.span(), leaf_idx, idx_offset);
         roots.append_span(root.span());
+
+        println!("root: {:?}", root);
 
         idx_offset += SPX_FORS_BASE_OFFSET;
     }
