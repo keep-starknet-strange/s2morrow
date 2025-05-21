@@ -26,7 +26,6 @@ pub struct Args {
 #[executable]
 fn main(args: Args) {
     let Args { pk, sig, message } = args;
-
     let res = sphincs::verify_128s(message.span(), sig, pk);
-    //assert(res, 'invalid signature');
+    assert(res, 'invalid signature');
 }

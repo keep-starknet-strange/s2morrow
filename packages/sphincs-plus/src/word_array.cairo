@@ -126,7 +126,7 @@ pub impl WordArrayImpl of WordArrayTrait {
     }
 }
 
-#[cfg(target: 'test')]
+#[cfg(or(test, feature: "debug"))]
 pub mod hex {
     use core::traits::DivRem;
     use super::{WordArray, WordArrayTrait, WordSpan, WordSpanTrait};

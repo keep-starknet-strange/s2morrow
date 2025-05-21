@@ -27,8 +27,7 @@ pub struct SphincsPublicKey {
 #[derive(Drop, Serde, Default)]
 pub struct WotsMerkleSignature {
     pub wots_sig: WotsSignature,
-    pub auth_path: [HashOutput; SPX_TREE_HEIGHT - 1],
-    _unused: HashOutput,
+    pub auth_path: [HashOutput; SPX_TREE_HEIGHT],
 }
 
 #[derive(Drop)]
@@ -43,18 +42,12 @@ pub fn verify_128s(message: WordSpan, sig: SphincsSignature, pk: SphincsPublicKe
     let SphincsSignature { randomizer, fors_sig, wots_merkle_sig_list } = sig;
     let SphincsPublicKey { pk_seed, pk_root } = pk;
 
-    println!("randomizer: {:?}", randomizer);
-
     // Seed the hash function state.
     let ctx = initialize_hash_function(pk_seed);
 
-    // Initialize addresses
+    // Initialize address
     let mut tree_addr: Address = Default::default();
-    let mut wots_addr: Address = Default::default();
-    let mut wots_pk_addr: Address = Default::default();
-
     tree_addr.set_address_type(AddressType::HASHTREE);
-    wots_pk_addr.set_address_type(AddressType::FORSPK);
 
     // Compute the extended message digest which is `mhash || tree_idx || leaf_idx`.
     let digest = hash_message_128s(randomizer, pk_seed, pk_root, message, SPX_DGST_BYTES);
@@ -64,6 +57,7 @@ pub fn verify_128s(message: WordSpan, sig: SphincsSignature, pk: SphincsPublicKe
         mhash, mut tree_address, mut leaf_idx,
     } = split_xdigest_128s(digest.span());
 
+    let mut wots_addr: Address = Default::default();
     wots_addr.set_address_type(AddressType::WOTS);
     wots_addr.set_hypertree_address(tree_address);
     wots_addr.set_keypair(leaf_idx);
@@ -74,35 +68,34 @@ pub fn verify_128s(message: WordSpan, sig: SphincsSignature, pk: SphincsPublicKe
     let mut layer: u8 = 0;
     let mut wots_merkle_sig_iter = wots_merkle_sig_list.span();
 
-    while let Some(WotsMerkleSignature {
-        wots_sig, auth_path, _unused: _,
-    }) = wots_merkle_sig_iter.pop_front() {
-        wots_addr.set_hypertree_address(tree_address);
+    while let Some(WotsMerkleSignature { wots_sig, auth_path }) = wots_merkle_sig_iter.pop_front() {
+        tree_addr.set_hypertree_layer(layer);
+        tree_addr.set_hypertree_address(tree_address);
+
+        wots_addr = tree_addr;
+        wots_addr.set_address_type(AddressType::WOTS);
         wots_addr.set_keypair(leaf_idx);
+
+        let mut wots_pk_addr = wots_addr;
+        wots_pk_addr.set_address_type(AddressType::WOTSPK);
 
         // The WOTS public key is only correct if the signature was correct.
         // Initially, root is the FORS pk, but on subsequent iterations it is
         // the root of the subtree below the currently processed subtree.
         let wots_pk = wots_pk_from_sig(ctx, *wots_sig, root, wots_addr);
 
-        wots_pk_addr.set_keypair(leaf_idx);
-
         // Compute the leaf node using the WOTS public key.
         let leaf = thash_128s(ctx, wots_pk_addr, wots_pk.span());
-
-        tree_addr.set_hypertree_layer(layer);
-        tree_addr.set_hypertree_address(tree_address);
 
         // Compute the root node of this subtree.
         // Auth path has fixed length, so we don't need to assert tree height.
         root = compute_root(ctx, tree_addr, leaf, auth_path.span(), leaf_idx.into(), 0);
 
-        println!("wots root: {:?}", root);
-
         // Update the indices for the next layer.
         let (q, r) = DivRem::div_rem(tree_address, 0x200); // 1 << tree_height = 2^9 = 0x200
         tree_address = q;
         leaf_idx = r.try_into().unwrap();
+        layer += 1;
     }
 
     // Check if the root node equals the root node in the public key.
@@ -119,13 +112,15 @@ fn split_xdigest_128s(mut digest: WordSpan) -> XMessageDigest {
     let leaf_idx: u16 = leaf_idx.try_into().expect('u32 -> u16 cast failed');
 
     // Tree address is the 54 LSB of the last two words.
-    let lo = *words.pop_back().unwrap();
-    let ahi = *words.pop_back().unwrap();
-    let (a, hi) = DivRem::div_rem(ahi, 0x100000);
+    let lo = *words.pop_back().unwrap(); // 32 bits
+    let ahi = *words
+        .pop_back()
+        .unwrap(); // 8 bits (mhash) | 2 bits (discarded) | 22 bits (tree_address)
+    let (a, hi) = DivRem::div_rem(ahi, 0x400000);
     let tree_address = hi.into() * 0x100000000 + lo.into();
 
     // Message hash is the remaining 21 bytes.
-    let mhash = WordSpanTrait::new(words.into(), a / 0x10, 1);
+    let mhash = WordSpanTrait::new(words.into(), a / 0x4, 1);
 
     XMessageDigest { mhash, tree_address, leaf_idx }
 }
@@ -2128,8 +2123,8 @@ mod tests {
         let msg = words_from_hex(
             "1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b",
         );
-        let sig = Serde::deserialize(ref serialized_sig).unwrap();
-        let pk = Serde::deserialize(ref serialized_pk).unwrap();
+        let sig: SphincsSignature = Serde::deserialize(ref serialized_sig).unwrap();
+        let pk: SphincsPublicKey = Serde::deserialize(ref serialized_pk).unwrap();
         assert!(serialized_sig.is_empty());
         let res = verify_128s(msg.span(), sig, pk);
         assert_eq!(res, true);

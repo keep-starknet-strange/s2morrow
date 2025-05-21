@@ -54,6 +54,13 @@ pub enum AddressType {
 
 #[generate_trait]
 pub impl AddressImpl of AddressTrait {
+    fn from_components(w0: u32, w1: u32, w2: u32, w3: u32, w4: u32, w5: u32) -> Address {
+        let (w0_a, w0_bcd) = DivRem::div_rem(w0, 0x1000000);
+        let (w2_a, w2_b) = DivRem::div_rem(w2 / 0x10000, 0x100);
+        let (w4_b, w4_cd) = DivRem::div_rem(w4 % 0x1000000, 0x10000);
+        Address { w0, w1, w2, w3, w4, w5, w0_a, w0_bcd, w2_a, w2_b, w4_b, w4_cd }
+    }
+
     fn set_hypertree_layer(ref self: Address, layer: u8) {
         self.w0_a = layer.into() * 0x1000000;
         self.w0 = self.w0_a + self.w0_bcd;

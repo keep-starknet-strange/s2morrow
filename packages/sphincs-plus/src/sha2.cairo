@@ -23,11 +23,12 @@ pub fn sha256_inc_init(ref state: Sha256State) {
 
 /// Updates the SHA-256 hasher state with the given data (data length must be a multiple of 16).
 pub fn sha256_inc_update(ref state: Sha256State, mut data: Span<u32>) {
+    let data_len = data.len();
     while let Some(chunk) = data.multi_pop_front::<16>() {
         state.h = sha256_inner(chunk.span(), state.h);
     }
     assert(data.is_empty(), 'unaligned sha256 block');
-    state.byte_len += data.len() * 4;
+    state.byte_len += data_len * 4;
 }
 
 /// Finalizes the SHA-256 hasher state and returns the hash.
