@@ -19,7 +19,7 @@ pub type ForsSignature = [ForsTreeSignature; SPX_FORS_TREES];
 #[derive(Drop, Copy, Serde, Default)]
 pub struct ForsTreeSignature {
     pub sk_seed: HashOutput,
-    pub auth_path: [HashOutput; SPX_FORS_HEIGHT - 1],
+    pub auth_path: [HashOutput; SPX_FORS_HEIGHT],
 }
 
 /// Derive FORS public key from a signature.

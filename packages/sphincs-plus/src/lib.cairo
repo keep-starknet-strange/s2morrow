@@ -10,11 +10,13 @@ pub mod sha2;
 pub mod sphincs;
 pub mod word_array;
 pub mod wots;
-use crate::sphincs::SphincsSignature;
+use crate::sphincs::{SphincsPublicKey, SphincsSignature};
 use crate::word_array::{WordArray, WordArrayTrait};
 
 #[derive(Drop, Serde, Default)]
 pub struct Args {
+    /// Sphincs+ public key.
+    pub pk: SphincsPublicKey,
     /// Sphincs+ signature.
     pub sig: SphincsSignature,
     /// Message.
@@ -23,8 +25,7 @@ pub struct Args {
 
 #[executable]
 fn main(args: Args) {
-    let Args { sig, message } = args;
-
-    let res = sphincs::verify_128s(message.span(), sig);
-    //assert(res, 'invalid signature');
+    let Args { pk, sig, message } = args;
+    let res = sphincs::verify_128s(message.span(), sig, pk);
+    assert(res, 'invalid signature');
 }

@@ -7,14 +7,17 @@ This project explores zkVM approach for batch verification of multiple PQ signat
 Implementation details:
 - ZKVM: Cairo
 - STARK prover: Stwo
-- Signature schemes: NIST candidates — Falcon, Dilithium2, Sphincs+
+- Signature schemes: NIST finalist — Falcon (lattice based), alternative Sphincs+ (hash based)
 
 ## Roadmap
 
-- [x] Falcon verification
-- [ ] Sphincs+ verification
-- [ ] Dilithium verification
-- [ ] Proving benchmarks
+- [x] Falcon512 verification
+- [x] Sphincs+ 128s with SHA2 (simple mode) verification
+- [ ] Stwo proving benchmarks
+
+Follow-up:
+- [ ] Sphincs+ 128s with Blake2s and 4-byte aligned address encoding
+- [ ] Falcon512 with probabilistic polynomial multiplication checking
 
 ## References
 

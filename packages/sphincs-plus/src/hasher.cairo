@@ -137,6 +137,12 @@ pub impl HashOutputSerde of Serde<HashOutput> {
     }
 }
 
+#[cfg(or(test, feature: "debug"))]
+pub fn to_hex(data: Span<u32>) -> ByteArray {
+    let word_span = WordSpanTrait::new(data, 0, 0);
+    crate::word_array::hex::words_to_hex(word_span)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::word_array::hex::{words_from_hex, words_to_hex};
@@ -159,6 +165,29 @@ mod tests {
 
         let hash = thash_128s(Default::default(), address, seed.span());
         assert_eq!(hash, [2384795752, 2382117612, 736107028, 3412802428]);
+    }
+
+    #[test]
+    fn test_thash_128s_2() {
+        let address = AddressTrait::from_components(15967, 96104791, 956497920, 4849664, 0, 3481);
+        let message = [3845349652, 3980556369, 2345842860, 1383522053];
+        let ctx = SpxCtx {
+            state_seeded: Sha256State {
+                h: (
+                    3428492436,
+                    489272603,
+                    2537945631,
+                    1304768729,
+                    3790301264,
+                    3396081315,
+                    293230186,
+                    253414835,
+                ),
+                byte_len: 64,
+            },
+        };
+        let digest = thash_128s(ctx, address, message.span());
+        assert_eq!(digest, [629918136, 3883225718, 1150955665, 4167860371]);
     }
 
     #[test]
@@ -198,5 +227,25 @@ mod tests {
             Default::default(), address, leaf, auth_path.span(), leaf_idx, idx_offset,
         );
         assert_eq!(root, [3756782339, 3014392485, 518995719, 3556760177]);
+    }
+
+    #[test]
+    fn test_initialize_hash_function() {
+        let pk_seed = [1350675573, 3521007802, 3973994890, 3022267814];
+        let ctx = initialize_hash_function(pk_seed);
+        assert_eq!(
+            ctx.state_seeded.h,
+            (
+                3428492436,
+                489272603,
+                2537945631,
+                1304768729,
+                3790301264,
+                3396081315,
+                293230186,
+                253414835,
+            ),
+        );
+        assert_eq!(ctx.state_seeded.byte_len, 64);
     }
 }
