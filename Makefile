@@ -50,7 +50,10 @@ falcon-burn:
 	scarb burn --package falcon --arguments-file packages/falcon/tests/data/args_512_1.json --output-file target/falcon.svg --open-in-browser
 
 sphincs-execute:
-	scarb --profile release execute --package sphincs_plus --print-resource-usage --arguments-file packages/sphincs-plus/tests/data/sha2_simple_128s.json
+	scarb --profile release execute \
+		--package sphincs_plus \
+		--print-resource-usage \
+		--arguments-file packages/sphincs-plus/tests/data/sha2_simple_128s.json
 
 sphincs-burn:
 	scarb burn --package sphincs_plus --output-file target/sphincs-plus.svg --open-in-browser

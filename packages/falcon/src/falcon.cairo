@@ -326,7 +326,7 @@ mod tests {
             8300, 3298, 9483, 5987, 12127, 7279, 8021, 12123, 12011, 8915, 676, 7129, 11601, 1593,
             10526, 9038, 3417, 10657, 4936, 5525,
         ];
-        if let Err(e) = verify_uncompressed(s1.span(), pk.span(), msg_point.span(), 1024) {
+        if let Err(e) = verify_uncompressed::<1024>(s1.span(), pk.span(), msg_point.span(), 1024) {
             println!("Error: {:?}", e);
             assert!(false);
         }

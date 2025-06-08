@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: MIT
 
 // Available address implementations.
-mod dense;
-mod sparse;
+pub mod dense;
+pub mod sparse;
 
 // Default address packing according to the sha256-128s parameters.
 #[cfg(not(feature: "friendly"))]
