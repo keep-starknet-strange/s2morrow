@@ -25,7 +25,7 @@ pub type HashOutput = [u32; SPX_HASH_LEN];
 /// Hash context.
 #[derive(Drop, Copy, Default, Debug)]
 pub struct SpxCtx {
-    pub state_seeded: HashState,
+    state_seeded: HashState,
 }
 
 /// Absorb the constant pub_seed using one round of the compression function
