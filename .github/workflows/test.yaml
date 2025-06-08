@@ -22,3 +22,15 @@ jobs:
 
       - name: Run unit tests
         run: scarb test
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Scarb
+        uses: software-mansion/setup-scarb@v1.3.2
+
+      - name: Build packages
+        run: scarb build

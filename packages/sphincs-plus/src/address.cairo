@@ -5,9 +5,12 @@
 // Available address implementations.
 mod dense;
 mod sparse;
+#[cfg(not(feature: "friendly"))]
+pub use dense::Address;
 
 // Select the chosen Address implementation
-pub use dense::Address;
+#[cfg(feature: "friendly")]
+pub use sparse::Address;
 use crate::word_array::WordArray;
 
 #[derive(Drop)]

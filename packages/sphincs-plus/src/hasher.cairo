@@ -7,6 +7,9 @@ mod blake2s;
 mod sha256;
 
 // Select the hash function to use.
+#[cfg(feature: "friendly")]
+pub use blake2s::{HashState, hash_finalize, hash_init, hash_update};
+#[cfg(not(feature: "friendly"))]
 pub use sha256::{HashState, hash_finalize, hash_init, hash_update};
 use crate::address::{Address, AddressTrait, AddressType};
 use crate::params_128s::SPX_HASH_LEN;
