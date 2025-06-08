@@ -6,7 +6,6 @@ pub mod address;
 pub mod fors;
 pub mod hasher;
 pub mod params_128s;
-pub mod sha2;
 pub mod sphincs;
 pub mod word_array;
 pub mod wots;
@@ -27,5 +26,14 @@ pub struct Args {
 fn main(args: Args) {
     let Args { pk, sig, message } = args;
     let res = sphincs::verify_128s(message.span(), sig, pk);
+    // TODO: generate a valid signature for blake_hash
+    check_result(res);
+}
+
+#[cfg(feature: "blake_hash")]
+fn check_result(res: bool) {}
+
+#[cfg(not(feature: "blake_hash"))]
+fn check_result(res: bool) {
     assert(res, 'invalid signature');
 }

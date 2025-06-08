@@ -10,19 +10,19 @@ type T8 = (u32, u32, u32, u32, u32, u32, u32, u32);
 
 /// State of the SHA-256 hasher.
 #[derive(Debug, Drop, Copy, Default)]
-pub struct Sha256State {
-    pub h: T8,
-    pub byte_len: u32,
+pub struct HashState {
+    pub(crate) h: T8,
+    pub(crate) byte_len: u32,
 }
 
 /// Initializes the SHA-256 hasher state with IV and resets the byte length.
-pub fn sha256_inc_init(ref state: Sha256State) {
+pub fn hash_init(ref state: HashState) {
     state.h = h;
     state.byte_len = 0;
 }
 
 /// Updates the SHA-256 hasher state with the given data (data length must be a multiple of 16).
-pub fn sha256_inc_update(ref state: Sha256State, mut data: Span<u32>) {
+pub fn hash_update(ref state: HashState, mut data: Span<u32>) {
     let data_len = data.len();
     while let Some(chunk) = data.multi_pop_front::<16>() {
         state.h = sha256_inner(chunk.span(), state.h);
@@ -39,8 +39,8 @@ pub fn sha256_inc_update(ref state: Sha256State, mut data: Span<u32>) {
 /// 3. Append the length of the array in bits as a 64-bit number.
 ///
 /// Use last_input_word when the number of bytes in the last input word is less than 4.
-pub fn sha256_inc_finalize(
-    mut state: Sha256State, mut input: Array<u32>, last_input_word: u32, last_input_num_bytes: u32,
+pub fn hash_finalize(
+    mut state: HashState, mut input: Array<u32>, last_input_word: u32, last_input_num_bytes: u32,
 ) -> [u32; 8] {
     state.byte_len += input.len() * 4 + last_input_num_bytes;
 
@@ -273,7 +273,7 @@ mod tests {
         let buf = words_from_hex(
             "002e82f752b663241e060000000100000000000000047c9935a0b07694aa0c6d10e4db6b1add",
         );
-        let mut state = Sha256State {
+        let mut state = HashState {
             h: (
                 0x14163465,
                 0x04164476,
@@ -293,7 +293,7 @@ mod tests {
 
         let (input, last_input_word, last_input_num_bytes) = buf.into_components();
 
-        let res = sha256_inc_finalize(state, input, last_input_word, last_input_num_bytes);
+        let res = hash_finalize(state, input, last_input_word, last_input_num_bytes);
         assert_eq!(res, expected);
     }
 }

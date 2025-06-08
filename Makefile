@@ -1,15 +1,11 @@
 TARGET_DIR = target
 
-install-stwo:
-	# NOTE: rust-toolchain.toml must be the same as the one in the stwo-cairo repo
+install-cairo-prove:
 	RUSTFLAGS="-C target-cpu=native -C opt-level=3" \
 		cargo install \
-		--git https://github.com/starkware-libs/stwo-cairo \
-		--rev 61d338ee93f11a735eb5cd86f024f7a73d59d420 \
-		adapted_stwo
-
-install-cairo-execute:
-	cargo install --git https://github.com/ohad-agadi/cairo.git --rev 24c4130 cairo-execute
+			--git https://github.com/starkware-libs/stwo-cairo \
+			--rev adc68829b0e913d5a8bdf14932a45fde27a2e335 \
+			cairo-prove
 
 falcon-execute:
 	rm -rf $(TARGET_DIR)/execute/falcon \
@@ -23,34 +19,44 @@ falcon-args:
 falcon-build:
 	scarb --profile release build --package falcon
 
-falcon-cairo-execute:
-	rm -rf $(TARGET_DIR)/execute/falcon \
-		&& mkdir -p $(TARGET_DIR)/execute/falcon/execution1 \
-		&& cairo-execute \
-			--layout all_cairo \
-			--args-file packages/falcon/tests/data/args_512_1.json \
-			--standalone \
-			--disable-trace-padding true \
-			--prebuilt \
-			--trace-file $(TARGET_DIR)/execute/falcon/execution1/trace.bin \
-			--memory-file $(TARGET_DIR)/execute/falcon/execution1/memory.bin \
-			--air-public-input $(TARGET_DIR)/execute/falcon/execution1/air_public_input.json \
-			--air-private-input $(TARGET_DIR)/execute/falcon/execution1/air_private_input.json \
-			$(TARGET_DIR)/release/falcon.executable.json
-
-falcon-prove:
-	adapted_stwo \
-		--priv_json $(TARGET_DIR)/execute/falcon/execution1/air_private_input.json \
-		--pub_json $(TARGET_DIR)/execute/falcon/execution1/air_public_input.json \
-		--proof_path $(TARGET_DIR)/proof.json \
-		--params_json prover_params.json \
-		--verify
+falcon-prove: falcon-build
+	rm -rf $(TARGET_DIR)/execute/falcon
+	mkdir -p $(TARGET_DIR)/execute/falcon
+	cairo-prove prove \
+		$(TARGET_DIR)/release/falcon.executable.json \
+		$(TARGET_DIR)/execute/falcon/proof.json \
+		--arguments-file packages/falcon/tests/data/args_512_1.json \
+		--proof-format cairo-serde
 
 falcon-burn:
-	scarb burn --package falcon --arguments-file packages/falcon/tests/data/args_512_1.json --output-file target/falcon.svg --open-in-browser
+	scarb burn --package falcon \
+		--arguments-file packages/falcon/tests/data/args_512_1.json \
+		--output-file target/falcon.svg \
+		--open-in-browser
 
-sphincs-execute:
-	scarb --profile release execute --package sphincs_plus --print-resource-usage --arguments-file packages/sphincs-plus/tests/data/sha2_simple_128s.json
+sphincs-build:
+	scarb --profile release build --package sphincs_plus --features blake_hash,sparse_addr
 
-sphincs-burn:
-	scarb burn --package sphincs_plus --output-file target/sphincs-plus.svg --open-in-browser
+sphincs-execute: sphincs-build
+	rm -rf $(TARGET_DIR)/execute/sphincs_plus
+	scarb --profile release execute \
+		--no-build \
+		--package sphincs_plus \
+		--print-resource-usage \
+		--arguments-file packages/sphincs-plus/tests/data/sha2_simple_128s.json
+
+sphincs-burn: sphincs-build
+	scarb burn --package sphincs_plus \
+		--no-build \
+		--output-file target/sphincs-plus.svg \
+		--arguments-file packages/sphincs-plus/tests/data/sha2_simple_128s.json \
+		--open-in-browser
+
+sphincs-prove: sphincs-build
+	rm -rf $(TARGET_DIR)/execute/sphincs_plus
+	mkdir -p $(TARGET_DIR)/execute/sphincs_plus
+	cairo-prove prove \
+		$(TARGET_DIR)/release/sphincs_plus.executable.json \
+		$(TARGET_DIR)/execute/sphincs_plus/proof.json \
+		--arguments-file packages/sphincs-plus/tests/data/sha2_simple_128s.json \
+		--proof-format cairo-serde

@@ -2,17 +2,30 @@
 //
 // SPDX-License-Identifier: MIT
 
+// Available hash functions.
+mod blake2s;
+mod sha256;
+
+// Cairo-friendly hash function (custom AIR in Stwo)
+#[cfg(feature: "blake_hash")]
+pub use blake2s::{HashState, hash_finalize, hash_init, hash_update};
+
+// Default hash function according to the sha256-128s parameters.
+#[cfg(not(feature: "blake_hash"))]
+pub use sha256::{HashState, hash_finalize, hash_init, hash_update};
+
+// Imports.
 use crate::address::{Address, AddressTrait, AddressType};
 use crate::params_128s::SPX_HASH_LEN;
-use crate::sha2::{Sha256State, sha256_inc_finalize, sha256_inc_init, sha256_inc_update};
 use crate::word_array::{WordArray, WordArrayTrait, WordSpan, WordSpanTrait};
 
 /// Hash output.
 pub type HashOutput = [u32; SPX_HASH_LEN];
 
+/// Hash context.
 #[derive(Drop, Copy, Default, Debug)]
 pub struct SpxCtx {
-    pub state_seeded: Sha256State,
+    state_seeded: HashState,
 }
 
 /// Absorb the constant pub_seed using one round of the compression function
@@ -22,19 +35,19 @@ pub fn initialize_hash_function(pk_seed: HashOutput) -> SpxCtx {
     let mut data = pk_seed.span().into();
     data.append_span(array![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].span());
 
-    let mut state: Sha256State = Default::default();
-    sha256_inc_init(ref state);
-    sha256_inc_update(ref state, data.span());
+    let mut state: HashState = Default::default();
+    hash_init(ref state);
+    hash_update(ref state, data.span());
 
     SpxCtx { state_seeded: state }
 }
 
 /// Compute a truncated hash of the data.
-pub fn thash_128s(ctx: SpxCtx, address: Address, input: Span<u32>) -> HashOutput {
+pub fn thash_128s(ctx: SpxCtx, address: @Address, input: Span<u32>) -> HashOutput {
     let mut buffer = address.to_word_array();
     buffer.append_u32_span(input);
     let (words, last_word, last_word_len) = buffer.into_components();
-    let [d0, d1, d2, d3, _, _, _, _] = sha256_inc_finalize(
+    let [d0, d1, d2, d3, _, _, _, _] = hash_finalize(
         ctx.state_seeded, words, last_word, last_word_len,
     );
     [d0, d1, d2, d3]
@@ -58,11 +71,11 @@ pub fn hash_message_128s(
     let (msg_words, msg_last_word, msg_last_word_len) = message.into_components();
     data.append_span(msg_words);
 
-    let mut state: Sha256State = Default::default();
-    sha256_inc_init(ref state);
+    let mut state: HashState = Default::default();
+    hash_init(ref state);
 
     // Compute the seed for XOF.
-    let seed = sha256_inc_finalize(state, data, msg_last_word, msg_last_word_len);
+    let seed = hash_finalize(state, data, msg_last_word, msg_last_word_len);
 
     let mut xof_data: Array<u32> = array![];
     xof_data.append_span(randomizer.span());
@@ -71,7 +84,7 @@ pub fn hash_message_128s(
     xof_data.append(0); // MGF1 counter = 0
 
     // Apply MGF1 to the seed.
-    let mut buffer = sha256_inc_finalize(state, xof_data.into(), 0, 0).span();
+    let mut buffer = hash_finalize(state, xof_data.into(), 0, 0).span();
 
     // Construct the digest from the extended output.
     // NOTE: we haven't cleared the LSB of the last word, has to be handled correctly.
@@ -86,7 +99,7 @@ pub fn hash_message_128s(
 /// Compute the root of a tree given the leaf and the authentication path.
 pub fn compute_root(
     ctx: SpxCtx,
-    mut address: Address,
+    address: @Address,
     leaf: HashOutput,
     mut auth_path: Span<HashOutput>,
     mut leaf_idx: u32,
@@ -94,6 +107,7 @@ pub fn compute_root(
 ) -> HashOutput {
     let mut node = leaf;
     let mut i = 0;
+    let mut address = address.clone();
 
     while let Some(hash_witness) = auth_path.pop_front() {
         let (q, r) = DivRem::div_rem(leaf_idx, 2);
@@ -114,7 +128,7 @@ pub fn compute_root(
         address.set_tree_height(i);
         address.set_tree_index(leaf_idx + idx_offset);
 
-        node = thash_128s(ctx, address, buffer.span());
+        node = thash_128s(ctx, @address, buffer.span());
     }
 
     node
@@ -143,7 +157,7 @@ pub fn to_hex(data: Span<u32>) -> ByteArray {
     crate::word_array::hex::words_to_hex(word_span)
 }
 
-#[cfg(test)]
+#[cfg(and(test, not(feature: "blake_hash")))]
 mod tests {
     use crate::word_array::hex::{words_from_hex, words_to_hex};
     use super::*;
@@ -152,7 +166,7 @@ mod tests {
     fn test_thash_128s() {
         let mut address: Address = Default::default();
         address.set_hypertree_layer(0);
-        address.set_hypertree_address(0x002f1d1de40b58e8);
+        address.set_hypertree_addr(0x002f1d1de40b58e8);
         address.set_address_type(AddressType::FORSTREE);
         address.set_keypair(0x01f9);
         address.set_tree_height(0);
@@ -163,16 +177,18 @@ mod tests {
         let (seed, _, _) = words_from_hex("d17096522c1d9de4e3c4c4e8659c1b86")
             .into_components(); // sk seed
 
-        let hash = thash_128s(Default::default(), address, seed.span());
+        let hash = thash_128s(Default::default(), @address, seed.span());
         assert_eq!(hash, [2384795752, 2382117612, 736107028, 3412802428]);
     }
 
     #[test]
     fn test_thash_128s_2() {
-        let address = AddressTrait::from_components(15967, 96104791, 956497920, 4849664, 0, 3481);
+        let address = AddressTrait::from_components(
+            array![15967, 96104791, 956497920, 4849664, 0, 3481],
+        );
         let message = [3845349652, 3980556369, 2345842860, 1383522053];
         let ctx = SpxCtx {
-            state_seeded: Sha256State {
+            state_seeded: HashState {
                 h: (
                     3428492436,
                     489272603,
@@ -186,7 +202,7 @@ mod tests {
                 byte_len: 64,
             },
         };
-        let digest = thash_128s(ctx, address, message.span());
+        let digest = thash_128s(ctx, @address, message.span());
         assert_eq!(digest, [629918136, 3883225718, 1150955665, 4167860371]);
     }
 
@@ -224,7 +240,7 @@ mod tests {
             [1847957826, 195918516, 131309271, 2628527584],
         ];
         let root = compute_root(
-            Default::default(), address, leaf, auth_path.span(), leaf_idx, idx_offset,
+            Default::default(), @address, leaf, auth_path.span(), leaf_idx, idx_offset,
         );
         assert_eq!(root, [3756782339, 3014392485, 518995719, 3556760177]);
     }

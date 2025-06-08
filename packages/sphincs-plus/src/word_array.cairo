@@ -81,6 +81,7 @@ pub impl WordArrayImpl of WordArrayTrait {
 
     /// Append a 4-byte word in big-endian order.
     fn append_u32_be(ref self: WordArray, value: u32) {
+        // TODO: If last input is always 0, we can optimize this.
         if self.last_input_num_bytes == 0 {
             self.input.append(value)
         } else if self.last_input_num_bytes == 1 {
