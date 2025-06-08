@@ -19,7 +19,7 @@ falcon-args:
 falcon-build:
 	scarb --profile release build --package falcon
 
-falcon-prove:
+falcon-prove: falcon-build
 	rm -rf $(TARGET_DIR)/execute/falcon
 	mkdir -p $(TARGET_DIR)/execute/falcon
 	cairo-prove prove \
@@ -29,19 +29,30 @@ falcon-prove:
 		--proof-format cairo-serde
 
 falcon-burn:
-	scarb burn --package falcon --arguments-file packages/falcon/tests/data/args_512_1.json --output-file target/falcon.svg --open-in-browser
+	scarb burn --package falcon \
+		--arguments-file packages/falcon/tests/data/args_512_1.json \
+		--output-file target/falcon.svg \
+		--open-in-browser
 
-sphincs-execute:
+sphincs-build:
+	scarb --profile release build --package sphincs_plus --features blake_hash,sparse_addr
+
+sphincs-execute: sphincs-build
 	rm -rf $(TARGET_DIR)/execute/sphincs_plus
 	scarb --profile release execute \
+		--no-build \
 		--package sphincs_plus \
 		--print-resource-usage \
 		--arguments-file packages/sphincs-plus/tests/data/sha2_simple_128s.json
 
-sphincs-burn:
-	scarb burn --package sphincs_plus --output-file target/sphincs-plus.svg --open-in-browser
+sphincs-burn: sphincs-build
+	scarb burn --package sphincs_plus \
+		--no-build \
+		--output-file target/sphincs-plus.svg \
+		--arguments-file packages/sphincs-plus/tests/data/sha2_simple_128s.json \
+		--open-in-browser
 
-sphincs-prove:
+sphincs-prove: sphincs-build
 	rm -rf $(TARGET_DIR)/execute/sphincs_plus
 	mkdir -p $(TARGET_DIR)/execute/sphincs_plus
 	cairo-prove prove \
