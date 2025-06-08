@@ -6,7 +6,7 @@
 //! See https://www.di-mgt.com.au/pqc-09-fors-sig.html for layout details.
 
 use crate::word_array::{WordArray, WordArrayTrait};
-use super::{AddressTrait, AddressType};
+use super::AddressType;
 
 /// Generic address layout:
 ///  0       4      8        12       16       20
@@ -25,7 +25,7 @@ use super::{AddressTrait, AddressType};
 /// 5. Tree index (4 bytes)
 /// 6. Wots chain address (1 byte)
 /// 7. Wots hash address (1 byte)
-#[derive(Drop, Clone, Default, Debug)]
+#[derive(Drop, Default, Debug, Copy)]
 pub struct Address {
     w0: u32, // layer, hypertree address
     w1: u32, // hypertree address 
@@ -42,15 +42,8 @@ pub struct Address {
     w4_cd: u32,
 }
 
-#[cfg(test)]
-pub fn from_components(w0: u32, w1: u32, w2: u32, w3: u32, w4: u32, w5: u32) -> Address {
-    let (w0_a, w0_bcd) = DivRem::div_rem(w0, 0x1000000);
-    let (w2_a, w2_b) = DivRem::div_rem(w2 / 0x10000, 0x100);
-    let (w4_b, w4_cd) = DivRem::div_rem(w4 % 0x1000000, 0x10000);
-    Address { w0, w1, w2, w3, w4, w5, w0_a, w0_bcd, w2_a, w2_b, w4_b, w4_cd }
-}
-
-pub impl AddressImpl of AddressTrait<Address> {
+#[generate_trait]
+pub impl AddressImpl of AddressTrait {
     #[cfg(test)]
     fn from_components(mut components: Array<u32>) -> Address {
         let w0 = components.pop_front().unwrap();

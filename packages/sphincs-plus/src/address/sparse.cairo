@@ -6,10 +6,10 @@
 //! See https://www.di-mgt.com.au/pqc-09-fors-sig.html for layout details.
 
 use crate::word_array::{WordArray, WordArrayTrait};
-use super::{AddressTrait, AddressType};
+use super::AddressType;
 
 /// Simplified address layout
-#[derive(Drop, Default, Debug)]
+#[derive(Drop, Default, Debug, Copy)]
 pub struct Address {
     layer: u32,
     hypertree_addr_hi: u32,
@@ -22,7 +22,8 @@ pub struct Address {
     wots_hash_addr: u32,
 }
 
-pub impl AddressImpl of AddressTrait<Address> {
+#[generate_trait]
+pub impl AddressImpl of AddressTrait {
     #[cfg(test)]
     fn from_components(mut components: Array<u32>) -> Address {
         let layer = components.pop_front().unwrap();
@@ -84,31 +85,12 @@ pub impl AddressImpl of AddressTrait<Address> {
     fn to_word_array(self: @Address) -> WordArray {
         WordArrayTrait::new(
             array![
-                *self.layer,
-                *self.hypertree_addr_hi,
-                *self.hypertree_addr_lo,
-                *self.address_type,
-                *self.keypair,
-                *self.tree_height,
-                *self.tree_index,
-                *self.wots_chain_addr,
+                *self.layer, *self.hypertree_addr_hi, *self.hypertree_addr_lo, *self.address_type,
+                *self.keypair, *self.tree_height, *self.tree_index, *self.wots_chain_addr,
                 *self.wots_hash_addr,
             ],
             0,
             0,
         )
-    }
-}
-
-impl AddressClone of Clone<Address> {
-    fn clone(self: @Address) -> Address {
-        Address {
-            layer: *self.layer,
-            hypertree_addr_hi: *self.hypertree_addr_hi,
-            hypertree_addr_lo: *self.hypertree_addr_lo,
-            address_type: *self.address_type,
-            keypair: *self.keypair,
-            ..Default::default(),
-        }
     }
 }

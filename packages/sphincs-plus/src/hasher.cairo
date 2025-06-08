@@ -6,11 +6,15 @@
 mod blake2s;
 mod sha256;
 
-// Select the hash function to use.
+// Cairo-friendly hash function (custom AIR in Stwo)
 #[cfg(feature: "friendly")]
 pub use blake2s::{HashState, hash_finalize, hash_init, hash_update};
+
+// Default hash function according to the sha256-128s parameters.
 #[cfg(not(feature: "friendly"))]
 pub use sha256::{HashState, hash_finalize, hash_init, hash_update};
+
+// Imports.
 use crate::address::{Address, AddressTrait, AddressType};
 use crate::params_128s::SPX_HASH_LEN;
 use crate::word_array::{WordArray, WordArrayTrait, WordSpan, WordSpanTrait};
@@ -153,7 +157,7 @@ pub fn to_hex(data: Span<u32>) -> ByteArray {
     crate::word_array::hex::words_to_hex(word_span)
 }
 
-#[cfg(test)]
+#[cfg(and(test, not(feature: "friendly")))]
 mod tests {
     use crate::word_array::hex::{words_from_hex, words_to_hex};
     use super::*;

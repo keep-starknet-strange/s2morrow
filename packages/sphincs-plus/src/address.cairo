@@ -5,13 +5,14 @@
 // Available address implementations.
 mod dense;
 mod sparse;
-#[cfg(not(feature: "friendly"))]
-pub use dense::Address;
 
-// Select the chosen Address implementation
+// Default address packing according to the sha256-128s parameters.
+#[cfg(not(feature: "friendly"))]
+pub use dense::{Address, AddressTrait};
+
+// Cairo-friendly address packing.
 #[cfg(feature: "friendly")]
-pub use sparse::Address;
-use crate::word_array::WordArray;
+pub use sparse::{Address, AddressTrait};
 
 #[derive(Drop)]
 pub enum AddressType {
@@ -22,21 +23,6 @@ pub enum AddressType {
     FORSPK, // 4
     WOTSPRF, // 5
     FORSPRF // 6
-}
-
-pub trait AddressTrait<T> {
-    fn set_hypertree_layer(ref self: T, layer: u8);
-    fn set_hypertree_addr(ref self: T, tree_address: u64);
-    fn set_address_type(ref self: T, address_type: AddressType);
-    fn set_keypair(ref self: T, keypair: u16);
-    fn set_tree_height(ref self: T, tree_height: u8);
-    fn set_tree_index(ref self: T, tree_index: u32);
-    fn set_wots_chain_addr(ref self: T, chain_address: u8);
-    fn set_wots_hash_addr(ref self: T, hash_address: u8);
-    fn to_word_array(self: @T) -> WordArray;
-
-    #[cfg(test)]
-    fn from_components(components: Array<u32>) -> T;
 }
 
 impl AddressTypeToU32 of Into<AddressType, u32> {
