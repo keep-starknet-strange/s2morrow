@@ -11,8 +11,8 @@ type T8 = (u32, u32, u32, u32, u32, u32, u32, u32);
 /// State of the SHA-256 hasher.
 #[derive(Debug, Drop, Copy, Default)]
 pub struct HashState {
-    h: T8,
-    byte_len: u32,
+    pub(crate) h: T8,
+    pub(crate) byte_len: u32,
 }
 
 /// Initializes the SHA-256 hasher state with IV and resets the byte length.

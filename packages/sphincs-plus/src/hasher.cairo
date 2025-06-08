@@ -7,11 +7,11 @@ mod blake2s;
 mod sha256;
 
 // Cairo-friendly hash function (custom AIR in Stwo)
-#[cfg(feature: "friendly")]
+#[cfg(feature: "blake_hash")]
 pub use blake2s::{HashState, hash_finalize, hash_init, hash_update};
 
 // Default hash function according to the sha256-128s parameters.
-#[cfg(not(feature: "friendly"))]
+#[cfg(not(feature: "blake_hash"))]
 pub use sha256::{HashState, hash_finalize, hash_init, hash_update};
 
 // Imports.

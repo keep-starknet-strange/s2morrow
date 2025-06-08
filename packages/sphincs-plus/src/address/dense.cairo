@@ -44,7 +44,6 @@ pub struct Address {
 
 #[generate_trait]
 pub impl AddressImpl of AddressTrait {
-    #[cfg(test)]
     fn from_components(mut components: Array<u32>) -> Address {
         let w0 = components.pop_front().unwrap();
         let w1 = components.pop_front().unwrap();

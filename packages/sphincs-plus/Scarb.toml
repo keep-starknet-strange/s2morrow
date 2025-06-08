@@ -14,5 +14,6 @@ cairo_execute = "2.11.4"
 cairo_test = "2.11.4"
 
 [features]
-default = ["friendly"]
-friendly = []
+default = []
+blake_hash = []
+sparse_addr = []

@@ -24,7 +24,6 @@ pub struct Address {
 
 #[generate_trait]
 pub impl AddressImpl of AddressTrait {
-    #[cfg(test)]
     fn from_components(mut components: Array<u32>) -> Address {
         let layer = components.pop_front().unwrap();
         let hypertree_addr_hi = components.pop_front().unwrap();

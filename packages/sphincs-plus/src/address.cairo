@@ -7,11 +7,11 @@ pub mod dense;
 pub mod sparse;
 
 // Default address packing according to the sha256-128s parameters.
-#[cfg(not(feature: "friendly"))]
+#[cfg(not(feature: "sparse_addr"))]
 pub use dense::{Address, AddressTrait};
 
 // Cairo-friendly address packing.
-#[cfg(feature: "friendly")]
+#[cfg(feature: "sparse_addr")]
 pub use sparse::{Address, AddressTrait};
 
 #[derive(Drop)]
