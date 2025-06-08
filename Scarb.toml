@@ -3,4 +3,3 @@ members = ["packages/*"]
 
 [cairo]
 enable-gas = false
-sierra-replace-ids = true

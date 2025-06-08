@@ -157,7 +157,7 @@ pub fn to_hex(data: Span<u32>) -> ByteArray {
     crate::word_array::hex::words_to_hex(word_span)
 }
 
-#[cfg(and(test, not(feature: "friendly")))]
+#[cfg(and(test, not(feature: "blake_hash")))]
 mod tests {
     use crate::word_array::hex::{words_from_hex, words_to_hex};
     use super::*;

@@ -12,8 +12,8 @@ const BLAKE2S_256_IV: [u32; 8] = [
 /// Blake2s incremental state.
 #[derive(Debug, Drop, Copy)]
 pub struct HashState {
-    h: Box<[u32; 8]>,
-    byte_len: u32,
+    pub(crate) h: Box<[u32; 8]>,
+    pub(crate) byte_len: u32,
 }
 
 impl HashStateDefault of Default<HashState> {

@@ -16,7 +16,7 @@ Implementation details:
 - [ ] Stwo proving benchmarks
 
 Follow-up:
-- [ ] Sphincs+ 128s with Blake2s and 4-byte aligned address encoding
+- [x] Sphincs+ 128s with Blake2s and 4-byte aligned address encoding
 - [ ] Falcon512 with probabilistic polynomial multiplication checking
 
 ## References
