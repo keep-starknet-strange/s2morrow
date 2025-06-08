@@ -42,8 +42,10 @@ pub impl WotsSignatureDefault of Default<WotsSignature> {
 
 /// Takes a WOTS signature and an n-byte message, computes a WOTS public key.
 pub fn wots_pk_from_sig(
-    ctx: SpxCtx, sig: WotsSignature, message: HashOutput, mut address: Address,
+    ctx: SpxCtx, sig: WotsSignature, message: HashOutput, address: @Address,
 ) -> Array<u32> {
+    let mut wots_addr = address.clone();
+
     let mut lengths = base_w_128s(message.span());
     add_checksum_128s(ref lengths);
 
@@ -53,10 +55,10 @@ pub fn wots_pk_from_sig(
     let mut pk = array![];
 
     while let Some(len) = lengths_iter.pop_front() {
-        address.set_chain_address(chain_idx);
+        wots_addr.set_wots_chain_addr(chain_idx);
 
         let sk = sig_iter.pop_front().unwrap();
-        let chain_pk = chain_hash_128s(ctx, *sk, *len, address);
+        let chain_pk = chain_hash_128s(ctx, *sk, *len, ref wots_addr);
         pk.append_span(chain_pk.span());
 
         chain_idx += 1;
@@ -86,17 +88,19 @@ pub fn add_checksum_128s(ref message_w: Array<u32>) {
 /// Compute the H^{steps}(input) hash chain given the chain length (start) and return the last
 /// digest.
 pub fn chain_hash_128s(
-    ctx: SpxCtx, input: HashOutput, length: u32, mut address: Address,
+    ctx: SpxCtx, input: HashOutput, length: u32, ref address: Address,
 ) -> HashOutput {
     if length == 15 {
         return input;
     }
     let start: u8 = length.try_into().unwrap();
-    address.set_hash_address(start);
-    let mut output = thash_128s(ctx, address, input.span());
+    address.set_wots_hash_addr(start);
+
+    let mut output = thash_128s(ctx, @address, input.span());
+
     for i in start + 1..15 { // SPX_WOTS_W - 1
-        address.set_hash_address(i);
-        output = thash_128s(ctx, address, output.span());
+        address.set_wots_hash_addr(i);
+        output = thash_128s(ctx, @address, output.span());
     }
     output
 }
@@ -168,21 +172,24 @@ mod tests {
     #[test]
     fn test_chain_hash() {
         let input = [0x01020304, 0x05060708, 0x10203040, 0x50607080];
-        let output = chain_hash_128s(Default::default(), input, 5, Default::default());
+        let mut address = Default::default();
+        let output = chain_hash_128s(Default::default(), input, 5, ref address);
         assert_eq!(output, [0x8ae6cda7, 0xa098be21, 0x7c81bb4e, 0x860dd304]);
     }
 
     #[test]
     fn test_chain_hash_2() {
         let input = [2105475624, 2804661595, 372022634, 664091526];
-        let output = chain_hash_128s(Default::default(), input, 15, Default::default());
+        let mut address = Default::default();
+        let output = chain_hash_128s(Default::default(), input, 15, ref address);
         assert_eq!(output, [2105475624, 2804661595, 372022634, 664091526]);
     }
 
     #[test]
     fn test_chain_hash_3() {
         let input = [1640362213, 3803567762, 3187702095, 90287887];
-        let output = chain_hash_128s(Default::default(), input, 9, Default::default());
+        let mut address = Default::default();
+        let output = chain_hash_128s(Default::default(), input, 9, ref address);
         assert_eq!(output, [3700563191, 1880524724, 4147099568, 1051379323]);
     }
 

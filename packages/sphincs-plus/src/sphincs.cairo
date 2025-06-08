@@ -59,37 +59,37 @@ pub fn verify_128s(message: WordSpan, sig: SphincsSignature, pk: SphincsPublicKe
 
     let mut wots_addr: Address = Default::default();
     wots_addr.set_address_type(AddressType::WOTS);
-    wots_addr.set_hypertree_address(tree_address);
+    wots_addr.set_hypertree_addr(tree_address);
     wots_addr.set_keypair(leaf_idx);
 
     // Compute FORS public key (root) from the signature.
-    let mut root = fors_pk_from_sig(ctx, fors_sig, mhash, wots_addr);
+    let mut root = fors_pk_from_sig(ctx, fors_sig, mhash, @wots_addr);
 
     let mut layer: u8 = 0;
     let mut wots_merkle_sig_iter = wots_merkle_sig_list.span();
 
     while let Some(WotsMerkleSignature { wots_sig, auth_path }) = wots_merkle_sig_iter.pop_front() {
         tree_addr.set_hypertree_layer(layer);
-        tree_addr.set_hypertree_address(tree_address);
+        tree_addr.set_hypertree_addr(tree_address);
 
-        wots_addr = tree_addr;
+        wots_addr = tree_addr.clone();
         wots_addr.set_address_type(AddressType::WOTS);
         wots_addr.set_keypair(leaf_idx);
 
-        let mut wots_pk_addr = wots_addr;
+        let mut wots_pk_addr = wots_addr.clone();
         wots_pk_addr.set_address_type(AddressType::WOTSPK);
 
         // The WOTS public key is only correct if the signature was correct.
         // Initially, root is the FORS pk, but on subsequent iterations it is
         // the root of the subtree below the currently processed subtree.
-        let wots_pk = wots_pk_from_sig(ctx, *wots_sig, root, wots_addr);
+        let wots_pk = wots_pk_from_sig(ctx, *wots_sig, root, @wots_addr);
 
         // Compute the leaf node using the WOTS public key.
-        let leaf = thash_128s(ctx, wots_pk_addr, wots_pk.span());
+        let leaf = thash_128s(ctx, @wots_pk_addr, wots_pk.span());
 
         // Compute the root node of this subtree.
         // Auth path has fixed length, so we don't need to assert tree height.
-        root = compute_root(ctx, tree_addr, leaf, auth_path.span(), leaf_idx.into(), 0);
+        root = compute_root(ctx, @tree_addr, leaf, auth_path.span(), leaf_idx.into(), 0);
 
         // Update the indices for the next layer.
         let (q, r) = DivRem::div_rem(tree_address, 0x200); // 1 << tree_height = 2^9 = 0x200

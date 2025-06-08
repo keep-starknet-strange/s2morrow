@@ -24,12 +24,9 @@ pub struct ForsTreeSignature {
 
 /// Derive FORS public key from a signature.
 pub fn fors_pk_from_sig(
-    ctx: SpxCtx, mut sig: ForsSignature, mhash: WordSpan, address: Address,
+    ctx: SpxCtx, mut sig: ForsSignature, mhash: WordSpan, address: @Address,
 ) -> HashOutput {
-    let mut fors_pk_addr = address;
-    let mut fors_tree_addr = address;
-
-    fors_pk_addr.set_address_type(AddressType::FORSPK);
+    let mut fors_tree_addr = address.clone();
     fors_tree_addr.set_address_type(AddressType::FORSTREE);
 
     // Compute indices of leaves of the FORS trees
@@ -49,18 +46,21 @@ pub fn fors_pk_from_sig(
         fors_tree_addr.set_tree_index(idx_offset + leaf_idx);
 
         // Derive the leaf hash from the secret key seed and tree address.
-        let leaf = thash_128s(ctx, fors_tree_addr, sk_seed.span());
+        let leaf = thash_128s(ctx, @fors_tree_addr, sk_seed.span());
 
         // Derive the corresponding root node of this tree.
         // Auth path has fixed length, so we don't need to assert tree height.
-        let root = compute_root(ctx, fors_tree_addr, leaf, auth_path.span(), leaf_idx, idx_offset);
+        let root = compute_root(ctx, @fors_tree_addr, leaf, auth_path.span(), leaf_idx, idx_offset);
         roots.append_span(root.span());
 
         idx_offset += SPX_FORS_BASE_OFFSET;
     }
 
     // Hash horizontally across all tree roots to derive the public key.
-    thash_128s(ctx, fors_pk_addr, roots.span())
+    let mut fors_pk_addr = address.clone();
+    fors_pk_addr.set_address_type(AddressType::FORSPK);
+
+    thash_128s(ctx, @fors_pk_addr, roots.span())
 }
 
 /// Convert FORS mhash to leaves indices.
